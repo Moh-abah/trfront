@@ -1,0 +1,437 @@
+// import { StrategyTemplate } from '../types/strategy';
+
+// export const strategyTemplates: StrategyTemplate[] = [
+//     {
+//         id: 'moving_average_crossover',
+//         name: 'تقاطع المتوسطات المتحركة',
+//         description: 'استراتيجية تقاطع المتوسط المتحركة السريعة مع البطيئة',
+//         category: 'trend',
+//         icon: '📈',
+//         popularity: 95,
+//         successRate: 65,
+//         rules: [
+//             {
+//                 id: 'entry_rule',
+//                 name: 'شرط الدخول',
+//                 description: 'تقاطع المتوسط السريع فوق البطيء للشراء، وتقاطع المتوسط السريع تحت البطيء للبيع',
+//                 entryCondition: {
+//                     id: 'condition_1',
+//                     type: 'AND' as any,
+//                     leftOperand: {
+//                         type: 'indicator' as any,
+//                         value: 'sma_fast',
+//                         source: 'indicator',
+//                         indicatorId: 'sma',
+//                         parameter: 'value',
+//                     },
+//                     operator: 'CROSS_ABOVE' as any,
+//                     rightOperand: {
+//                         type: 'indicator' as any,
+//                         value: 'sma_slow',
+//                         source: 'indicator',
+//                         indicatorId: 'sma',
+//                         parameter: 'value',
+//                     },
+//                 },
+//                 exitCondition: {
+//                     id: 'condition_2',
+//                     type: 'AND' as any,
+//                     leftOperand: {
+//                         type: 'indicator' as any,
+//                         value: 'sma_fast',
+//                         source: 'indicator',
+//                         indicatorId: 'sma',
+//                         parameter: 'value',
+//                     },
+//                     operator: 'CROSS_BELOW' as any,
+//                     rightOperand: {
+//                         type: 'indicator' as any,
+//                         value: 'sma_slow',
+//                         source: 'indicator',
+//                         indicatorId: 'sma',
+//                         parameter: 'value',
+//                     },
+//                 },
+//                 positionSize: 0.1,
+//                 maxPosition: 5,
+//             },
+//         ],
+//         parameters: {
+//             fastPeriod: 10,
+//             slowPeriod: 30,
+//             stopLoss: 2,
+//             takeProfit: 4,
+//         },
+//     },
+//     {
+//         id: 'rsi_oversold_overbought',
+//         name: 'RSI مفرط البيع/الشراء',
+//         description: 'الشراء عند مستوى مفرط البيع والبيع عند مستوى مفرط الشراء',
+//         category: 'momentum',
+//         icon: '⚡',
+//         popularity: 85,
+//         successRate: 60,
+//         rules: [
+//             {
+//                 id: 'entry_rule',
+//                 name: 'شرط الدخول',
+//                 description: 'شراء عندما يكون RSI تحت 30، وبيع عندما يكون فوق 70',
+//                 entryCondition: {
+//                     id: 'condition_1',
+//                     type: 'OR' as any,
+//                     children: [
+//                         {
+//                             id: 'condition_1_1',
+//                             type: 'AND' as any,
+//                             leftOperand: {
+//                                 type: 'indicator' as any,
+//                                 value: 'rsi',
+//                                 source: 'indicator',
+//                                 indicatorId: 'rsi',
+//                                 parameter: 'value',
+//                             },
+//                             operator: '<' as any,
+//                             rightOperand: {
+//                                 type: 'number' as any,
+//                                 value: 30,
+//                             },
+//                         },
+//                         {
+//                             id: 'condition_1_2',
+//                             type: 'AND' as any,
+//                             leftOperand: {
+//                                 type: 'indicator' as any,
+//                                 value: 'rsi',
+//                                 source: 'indicator',
+//                                 indicatorId: 'rsi',
+//                                 parameter: 'value',
+//                             },
+//                             operator: '>' as any,
+//                             rightOperand: {
+//                                 type: 'number' as any,
+//                                 value: 70,
+//                             },
+//                         },
+//                     ],
+//                 },
+//                 stopLoss: {
+//                     id: 'stop_loss',
+//                     type: 'AND' as any,
+//                     leftOperand: {
+//                         type: 'price' as any,
+//                         value: 'entry_price',
+//                         source: 'price',
+//                     },
+//                     operator: '<=' as any,
+//                     rightOperand: {
+//                         type: 'percentage' as any,
+//                         value: 2,
+//                     },
+//                 },
+//                 takeProfit: {
+//                     id: 'take_profit',
+//                     type: 'AND' as any,
+//                     leftOperand: {
+//                         type: 'price' as any,
+//                         value: 'entry_price',
+//                         source: 'price',
+//                     },
+//                     operator: '>=' as any,
+//                     rightOperand: {
+//                         type: 'percentage' as any,
+//                         value: 3,
+//                     },
+//                 },
+//                 positionSize: 0.15,
+//                 maxPosition: 3,
+//             },
+//         ],
+//         parameters: {
+//             rsiPeriod: 14,
+//             oversoldLevel: 30,
+//             overboughtLevel: 70,
+//             stopLoss: 2,
+//             takeProfit: 3,
+//         },
+//     },
+//     {
+//         id: 'macd_crossover',
+//         name: 'تقاطع MACD',
+//         description: 'الشراء عند تقاطع MACD فوق خط الإشارة، والبيع عند تقاطع MACD تحت خط الإشارة',
+//         category: 'trend',
+//         icon: '📊',
+//         popularity: 80,
+//         successRate: 62,
+//         rules: [
+//             {
+//                 id: 'entry_rule',
+//                 name: 'شرط الدخول',
+//                 description: 'تقاطع MACD فوق خط الإشارة للشراء، وتقاطع MACD تحت خط الإشارة للبيع',
+//                 entryCondition: {
+//                     id: 'condition_1',
+//                     type: 'AND' as any,
+//                     leftOperand: {
+//                         type: 'indicator' as any,
+//                         value: 'macd_line',
+//                         source: 'indicator',
+//                         indicatorId: 'macd',
+//                         parameter: 'macd',
+//                     },
+//                     operator: 'CROSS_ABOVE' as any,
+//                     rightOperand: {
+//                         type: 'indicator' as any,
+//                         value: 'macd_signal',
+//                         source: 'indicator',
+//                         indicatorId: 'macd',
+//                         parameter: 'signal',
+//                     },
+//                 },
+//                 exitCondition: {
+//                     id: 'condition_2',
+//                     type: 'AND' as any,
+//                     leftOperand: {
+//                         type: 'indicator' as any,
+//                         value: 'macd_line',
+//                         source: 'indicator',
+//                         indicatorId: 'macd',
+//                         parameter: 'macd',
+//                     },
+//                     operator: 'CROSS_BELOW' as any,
+//                     rightOperand: {
+//                         type: 'indicator' as any,
+//                         value: 'macd_signal',
+//                         source: 'indicator',
+//                         indicatorId: 'macd',
+//                         parameter: 'signal',
+//                     },
+//                 },
+//                 trailingStop: true,
+//                 trailingDistance: 1.5,
+//                 positionSize: 0.12,
+//                 maxPosition: 4,
+//             },
+//         ],
+//         parameters: {
+//             fastPeriod: 12,
+//             slowPeriod: 26,
+//             signalPeriod: 9,
+//             stopLoss: 2.5,
+//             takeProfit: 5,
+//         },
+//     },
+//     {
+//         id: 'bollinger_breakout',
+//         name: 'اختراق بولينجر',
+//         description: 'الشراء عند اختراق النطاق العلوي، والبيع عند اختراق النطاق السفلي',
+//         category: 'volatility',
+//         icon: '🌊',
+//         popularity: 75,
+//         successRate: 58,
+//         rules: [
+//             {
+//                 id: 'entry_rule',
+//                 name: 'شرط الدخول',
+//                 description: 'شراء عند اختراق النطاق العلوي، وبيع عند اختراق النطاق السفلي',
+//                 entryCondition: {
+//                     id: 'condition_1',
+//                     type: 'OR' as any,
+//                     children: [
+//                         {
+//                             id: 'condition_1_1',
+//                             type: 'AND' as any,
+//                             leftOperand: {
+//                                 type: 'price' as any,
+//                                 value: 'close',
+//                                 source: 'price',
+//                             },
+//                             operator: '>' as any,
+//                             rightOperand: {
+//                                 type: 'indicator' as any,
+//                                 value: 'bollinger_upper',
+//                                 source: 'indicator',
+//                                 indicatorId: 'bollinger',
+//                                 parameter: 'upper',
+//                             },
+//                         },
+//                         {
+//                             id: 'condition_1_2',
+//                             type: 'AND' as any,
+//                             leftOperand: {
+//                                 type: 'price' as any,
+//                                 value: 'close',
+//                                 source: 'price',
+//                             },
+//                             operator: '<' as any,
+//                             rightOperand: {
+//                                 type: 'indicator' as any,
+//                                 value: 'bollinger_lower',
+//                                 source: 'indicator',
+//                                 indicatorId: 'bollinger',
+//                                 parameter: 'lower',
+//                             },
+//                         },
+//                     ],
+//                 },
+//                 stopLoss: {
+//                     id: 'stop_loss',
+//                     type: 'AND' as any,
+//                     leftOperand: {
+//                         type: 'price' as any,
+//                         value: 'entry_price',
+//                         source: 'price',
+//                     },
+//                     operator: '<=' as any,
+//                     rightOperand: {
+//                         type: 'percentage' as any,
+//                         value: 1.5,
+//                     },
+//                 },
+//                 takeProfit: {
+//                     id: 'take_profit',
+//                     type: 'AND' as any,
+//                     leftOperand: {
+//                         type: 'price' as any,
+//                         value: 'entry_price',
+//                         source: 'price',
+//                     },
+//                     operator: '>=' as any,
+//                     rightOperand: {
+//                         type: 'percentage' as any,
+//                         value: 3,
+//                     },
+//                 },
+//                 positionSize: 0.08,
+//                 maxPosition: 6,
+//             },
+//         ],
+//         parameters: {
+//             period: 20,
+//             stdDev: 2,
+//             stopLoss: 1.5,
+//             takeProfit: 3,
+//         },
+//     },
+//     {
+//         id: 'volume_spike',
+//         name: 'طفرة الحجم',
+//         description: 'التداول بناءً على طفرات حجم التداول',
+//         category: 'volume',
+//         icon: '📈',
+//         popularity: 70,
+//         successRate: 55,
+//         rules: [
+//             {
+//                 id: 'entry_rule',
+//                 name: 'شرط الدخول',
+//                 description: 'شراء عندما يكون الحجم أعلى من المتوسط مع اتجاه صاعد، وبيع عندما يكون الحجم أعلى من المتوسط مع اتجاه هابط',
+//                 entryCondition: {
+//                     id: 'condition_1',
+//                     type: 'AND' as any,
+//                     children: [
+//                         {
+//                             id: 'condition_1_1',
+//                             type: 'AND' as any,
+//                             leftOperand: {
+//                                 type: 'indicator' as any,
+//                                 value: 'volume',
+//                                 source: 'indicator',
+//                                 indicatorId: 'volume',
+//                                 parameter: 'value',
+//                             },
+//                             operator: '>' as any,
+//                             rightOperand: {
+//                                 type: 'indicator' as any,
+//                                 value: 'volume_sma',
+//                                 source: 'indicator',
+//                                 indicatorId: 'sma',
+//                                 parameter: 'value',
+//                             },
+//                         },
+//                         {
+//                             id: 'condition_1_2',
+//                             type: 'OR' as any,
+//                             children: [
+//                                 {
+//                                     id: 'condition_1_2_1',
+//                                     type: 'AND' as any,
+//                                     leftOperand: {
+//                                         type: 'price' as any,
+//                                         value: 'close',
+//                                         source: 'price',
+//                                     },
+//                                     operator: '>' as any,
+//                                     rightOperand: {
+//                                         type: 'price' as any,
+//                                         value: 'open',
+//                                         source: 'price',
+//                                     },
+//                                 },
+//                                 {
+//                                     id: 'condition_1_2_2',
+//                                     type: 'AND' as any,
+//                                     leftOperand: {
+//                                         type: 'price' as any,
+//                                         value: 'close',
+//                                         source: 'price',
+//                                     },
+//                                     operator: '<' as any,
+//                                     rightOperand: {
+//                                         type: 'price' as any,
+//                                         value: 'open',
+//                                         source: 'price',
+//                                     },
+//                                 },
+//                             ],
+//                         },
+//                     ],
+//                 },
+//                 positionSize: 0.1,
+//                 maxPosition: 5,
+//             },
+//         ],
+//         parameters: {
+//             volumePeriod: 20,
+//             stopLoss: 2,
+//             takeProfit: 4,
+//         },
+//     },
+// ];
+
+// export const strategyCategories = [
+//     { id: 'trend', name: 'الاتجاه', icon: '📈', color: '#3B82F6' },
+//     { id: 'momentum', name: 'الزخم', icon: '⚡', color: '#10B981' },
+//     { id: 'mean_reversion', name: 'العودة للمتوسط', icon: '↔️', color: '#8B5CF6' },
+//     { id: 'breakout', name: 'الاختراق', icon: '🚀', color: '#EF4444' },
+//     { id: 'volatility', name: 'التقلبات', icon: '🌊', color: '#F59E0B' },
+//     { id: 'volume', name: 'الحجم', icon: '📊', color: '#EC4899' },
+//     { id: 'multi_timeframe', name: 'متعدد الإطارات', icon: '⏰', color: '#6366F1' },
+//     { id: 'machine_learning', name: 'التعلم الآلي', icon: '🤖', color: '#14B8A6' },
+// ];
+
+// export const availableIndicatorsForRules = [
+//     { id: 'price', name: 'السعر', fields: ['open', 'high', 'low', 'close', 'volume'] },
+//     { id: 'sma', name: 'المتوسط المتحرك البسيط', fields: ['value'] },
+//     { id: 'ema', name: 'المتوسط المتحرك الأسي', fields: ['value'] },
+//     { id: 'rsi', name: 'مؤشر القوة النسبية', fields: ['value'] },
+//     { id: 'macd', name: 'مؤشر MACD', fields: ['macd', 'signal', 'histogram'] },
+//     { id: 'bollinger', name: 'بولينجر باندز', fields: ['upper', 'middle', 'lower'] },
+//     { id: 'stochastic', name: 'ستوكاستيك', fields: ['k', 'd'] },
+//     { id: 'atr', name: 'متوسط المدى الحقيقي', fields: ['value'] },
+//     { id: 'volume', name: 'الحجم', fields: ['value'] },
+//     { id: 'obv', name: 'حجم الرصيد', fields: ['value'] },
+//     { id: 'vwap', name: 'متوسط السعر المرجح بالحجم', fields: ['value'] },
+// ];
+
+// export const comparisonOperators = [
+//     { value: '==', label: 'يساوي' },
+//     { value: '!=', label: 'لا يساوي' },
+//     { value: '>', label: 'أكبر من' },
+//     { value: '>=', label: 'أكبر من أو يساوي' },
+//     { value: '<', label: 'أقل من' },
+//     { value: '<=', label: 'أقل من أو يساوي' },
+//     { value: 'CROSS_ABOVE', label: 'يعبر فوق' },
+//     { value: 'CROSS_BELOW', label: 'يعبر تحت' },
+//     { value: 'CROSS', label: 'يعبر' },
+//     { value: 'BETWEEN', label: 'بين' },
+//     { value: 'OUTSIDE', label: 'خارج' },
+// ];

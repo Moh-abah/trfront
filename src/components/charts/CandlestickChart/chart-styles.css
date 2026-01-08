@@ -1,0 +1,247 @@
+/* ================= Chart container styles ================= */
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* ================= Crosshair styles ================= */
+.tv-lightweight-charts {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+
+.marker {
+    z-index: 1000 !important;
+    position: relative !important;
+}
+
+ا
+/* ================= Chart scrollbar ================= */
+.chart-scrollbar {
+    height: 20px;
+    background: #f0f0f0;
+    border-top: 1px solid #ddd;
+}
+
+.dark .chart-scrollbar {
+    background: #1e1e1e;
+    border-top: 1px solid #333;
+}
+
+/* ================= Drawing tools ================= */
+.drawing-tool-active {
+    cursor: crosshair;
+}
+
+.drawing-tool-hover {
+    cursor: pointer;
+}
+
+.drawing-line {
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: stroke;
+}
+
+.drawing-line:hover {
+    stroke-width: 3;
+}
+
+.drawing-rectangle {
+    fill: none;
+    stroke-width: 2;
+    pointer-events: all;
+}
+
+.drawing-text {
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    pointer-events: all;
+    user-select: none;
+}
+
+/* ================= Chart loading overlay ================= */
+.chart-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 10;
+}
+
+.dark .chart-loading {
+    background: rgba(17, 24, 39, 0.9);
+}
+
+.chart-loading-spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ================= Tooltip styles ================= */
+.chart-tooltip {
+    position: absolute;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dark .chart-tooltip {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+}
+
+.chart-tooltip .price {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.chart-tooltip .time {
+    color: #6b7280;
+    font-size: 11px;
+}
+
+.dark .chart-tooltip .time {
+    color: #9ca3af;
+}
+
+/* ================= Indicators ================= */
+.indicator-line {
+    stroke-width: 2;
+}
+
+.indicator-area {
+    opacity: 0.3;
+}
+
+/* ================= Zoom controls ================= */
+.chart-zoom-controls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: flex;
+    gap: 4px;
+    z-index: 100;
+}
+
+.zoom-button {
+    width: 32px;
+    height: 32px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.zoom-button:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.dark .zoom-button {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+}
+
+.dark .zoom-button:hover {
+    background: #4b5563;
+    border-color: #6b7280;
+}
+
+/* ================= Candles ================= */
+.bullish-candle {
+    fill: #10b981;
+}
+
+.bearish-candle {
+    fill: #ef4444;
+}
+
+/* ================= Volume ================= */
+.volume-bar {
+    opacity: 0.7;
+}
+
+.volume-bar:hover {
+    opacity: 1;
+}
+
+/* ================= Alerts ================= */
+.chart-alert {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    z-index: 50;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ================= Mobile responsiveness ================= */
+@media (max-width: 768px) {
+    .chart-toolbar {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .timeframe-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .drawing-tools {
+        width: 40px;
+    }
+
+    .drawings-list {
+        width: 120px;
+    }
+}
