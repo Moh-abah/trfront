@@ -34,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
     };
 
     return (
-        <header className={`bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 ${className}`}>
+        <header className={`bg-background dark:bg-background border-b  border-border dark: border-border ${className}`}>
             <div className="px-4 py-3">
                 <div className="flex items-center justify-between">
                     {/* Left Section */}
@@ -48,19 +48,19 @@ export const Header: React.FC<HeaderProps> = ({
                         />
 
                         <div className="hidden lg:block">
-                            <h1 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h1>
+                            <h1 className="text-xl font-bold text-foreground dark:text-white">{title}</h1>
                         </div>
 
                         {showSearch && (
-                            <form onSubmit={handleSearch} className="hidden md:block">
+                            <form onSubmit={handleSearch} className="hidden md:block border-b border-border">
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground border-b border-border" />
                                     <Input
                                         type="search"
                                         placeholder="Search symbols, indicators..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-10 w-64"
+                                        className="pl-10 w-64 border-b border-border"
                                     />
                                 </div>
                             </form>
@@ -79,10 +79,10 @@ export const Header: React.FC<HeaderProps> = ({
 
                 {/* Mobile Search */}
                 {showSearch && (
-                    <div className="mt-3 md:hidden">
+                    <div className="mt-3 md:hidden border-b border-border">
                         <form onSubmit={handleSearch}>
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 border-b border-border" />
                                 <Input
                                     type="search"
                                     placeholder="Search symbols, indicators..."

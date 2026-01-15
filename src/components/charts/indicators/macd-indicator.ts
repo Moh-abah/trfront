@@ -1,5 +1,5 @@
-
 // @ts-nocheck
+
 
 import { IChartApi, ISeriesApi, UTCTimestamp, LineSeries, HistogramSeries } from "lightweight-charts";
 import { BaseIndicator, IndicatorConfig, IndicatorData, IndicatorDataMACD } from "./base-indicator";
@@ -17,8 +17,8 @@ export class MACDIndicator extends BaseIndicator {
     private signalCache: TimeValue[] = [];
     private histCache: HistPoint[] = [];
 
-    constructor(chart: IChartApi, config: IndicatorConfig) {
-        super(chart, config);
+    constructor(chart: IChartApi, config: IndicatorConfig, mainCandleSeries?: ISeriesApi<"Candlestick">) {
+        super(chart, config, mainCandleSeries);
     }
 
     createSeries(): ISeriesApi<any>[] {
@@ -312,7 +312,7 @@ export class MACDIndicator extends BaseIndicator {
     // دوال مساعدة
     // =================================================================
 
-    private mergeData(existing: TimeValue[], incoming: TimeValue[]): TimeValue[] {
+    protected mergeData(existing: TimeValue[], incoming: TimeValue[]): TimeValue[] {
         const map = new Map<number, number>();
         existing.forEach(p => map.set(p.time as number, p.value));
         incoming.forEach(p => map.set(p.time as number, p.value));

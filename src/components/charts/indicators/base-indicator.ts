@@ -8,10 +8,12 @@ import { IChartApi, ISeriesApi, LineSeries, SeriesMarker, UTCTimestamp } from "l
 export interface IndicatorConfig {
     id: string;
     name: string;
-    type: 'line' | 'histogram' | 'area' | 'band' | 'oscillator' | 'overlay';
+    type: 'line' | 'histogram' | 'area' | 'band' | 'oscillator' | 'overlay' | 'primitive';
     color?: string;
     overlay?: boolean;
     priceScaleId?: string;
+
+    options?: Record<string, any>;
 }
 
 export interface IndicatorData {
@@ -115,6 +117,10 @@ export abstract class BaseIndicator {
             this.series = this.createSeries();
             this.isSeriesCreated = true;
         }
+    }
+
+     getMainSeries(): ISeriesApi<'Candlestick'> | undefined {
+        return this.mainCandleSeries;
     }
 
     public getSeries(): ISeriesApi<any> | ISeriesApi<any>[] | null {

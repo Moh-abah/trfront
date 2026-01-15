@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 
 
@@ -17,6 +16,8 @@ import { SupplyDemandIndicator } from "./supply-demand";
 import { VolumeClimaxIndicator } from "./volume-climax";
 import { HarmonicIndicator } from "./harmonic-indicator";
 import { HVIVIndicator } from "./hv-iv-indicator";
+import { SMCOrderBlockIndicator } from "./smc-order-block-indicator";
+
 
 
 type IndicatorRegistry = {
@@ -42,6 +43,8 @@ export class IndicatorManager {
         'sma': SMAIndicator,
         'obv': OBVIndicator,
         'macd': MACDIndicator,
+
+        'smc':SMCOrderBlockIndicator,
         // المؤشرات التذبذبية
         'rsi': RSIIndicator,
         'atr': ATRIndicator,
@@ -745,7 +748,87 @@ export class IndicatorManager {
     }
 
 
+    private handleSMCOrderBlock(id: string, data: any): void {
+        // -------------------------------------------------------------
+        // 1. استخراج البيانات من هيكل الباك إند (Production Safe)
+        // -------------------------------------------------------------
+        // السجلات تشير إلى أن البيانات تأتي في key اسمه 'meta'
+        // نأخذ 'meta' أولاً، وإذا لم يوجد نأخذ 'metadata' كإحتياط
+        const rawData = data.meta || data.metadata;
 
+        if (!rawData) {
+            console.warn('[IndicatorManager] ⚠️ SMC data received but "meta" or "metadata" is missing.');
+            return;
+        }
+
+        // التحقق من وجود البيانات الأساسية
+        const blocks = rawData.order_blocks || [];
+        const points = rawData.swing_points || [];
+
+        if (blocks.length === 0 && points.length === 0) {
+            console.log('[IndicatorManager] ℹ️ SMC data is empty (no blocks or points)');
+            // لا نرجع، فقد يرغب المستخدم في مسح الرسم الحالي إذا كانت البيانات فارغة
+        }
+
+        // -------------------------------------------------------------
+        // 2. إدارة حالة المؤشر (Create or Update)
+        // -------------------------------------------------------------
+        let indicator = this.indicators.get(id) as SMCOrderBlockIndicator;
+
+        if (!indicator) {
+            // === إنشاء مؤشر جديد ===
+            console.log('[IndicatorManager] 🆕 Creating SMC Order Block Indicator...');
+
+            const config: IndicatorConfig = {
+                id: id,
+                name: data.name || 'SMC Order Blocks',
+                type: 'primitive', // مهم جداً للتمييز
+                overlay: true,     // يرسم على الشارت الرئيسي
+                priceScaleId: '',  // Primitives لا تحتاج ID خاص للـ Price Scale
+                color: '#FFFFFF'   // لون افتراضي (لن يستخدم بسبب الرسم المخصص)
+            };
+
+            // التحقق من توفر سلسلة الشموع الرئيسية
+            if (!this.candleSeries) {
+                console.error('[IndicatorManager] ❌ Cannot create SMC Indicator: Main candle series is missing.');
+                return;
+            }
+
+            try {
+                indicator = new SMCOrderBlockIndicator(this.chart, config, this.candleSeries);
+                indicator.createSeries(); // يُنشئ الـ Primitive داخلياً
+                this.indicators.set(id, indicator);
+                console.log('[IndicatorManager] ✅ SMC Indicator created and attached.');
+            } catch (err) {
+                console.error('[IndicatorManager] ❌ Failed to instantiate SMC Indicator:', err);
+                return;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 3. إعداد البيانات للتحديث (Mapping)
+        // -------------------------------------------------------------
+        // نحتاج لتغليف البيانات الخام داخل كائن IndicatorData
+        // SMCIndicator يتوقع البيانات تحت metadata
+        const updatePayload: IndicatorData = {
+            values: [], // SMC يستخدم Metadata فقط، Values غير مستخدمة هنا
+            metadata: rawData, // نمرر الكائن الذي يحتوي order_blocks و swing_points
+            signals: data.signals || null,
+            liveTime: data.liveTime || undefined
+        };
+
+        // -------------------------------------------------------------
+        // 4. تنفيذ التحديث
+        // -------------------------------------------------------------
+        try {
+            indicator.updateData(updatePayload);
+
+            // سجل موجز للأداء
+            // console.log(`[IndicatorManager] 🔄 SMC Updated: ${blocks.length} Blocks, ${points.length} Points`);
+        } catch (err) {
+            console.error('[IndicatorManager] ❌ Error while updating SMC Indicator:', err);
+        }
+    }
     private createAndAddIndicator(id: string, data: any): void {
         const name = data.name || id;
         const nameLower = name.toLowerCase();
@@ -755,6 +838,11 @@ export class IndicatorManager {
         // --- الهاندلرز الخاصة بك (نفس الترتيب الأصلي) ---
         if (nameLower.includes('bollinger') || nameLower.includes('bb') || nameLower.includes('band')) {
             this.handleBollingerBands(id, data);
+            return;
+        }
+
+        if (nameLower.includes('smc_order_block') || nameLower.includes('order_block')) {
+            this.handleSMCOrderBlock(id, data);
             return;
         }
 
@@ -1323,7 +1411,7 @@ export class IndicatorManager {
                 borderColor: '#444',
             });
 
-            // 2. توحيد اسم المقياس rsi_scale وضبط هوامشه
+   
             this.chart.priceScale('macd_scale').applyOptions({
                 scaleMargins: {
                     top: 0.45,
@@ -1336,7 +1424,7 @@ export class IndicatorManager {
 
             this.chart.priceScale('rsi_scale').applyOptions({
                 scaleMargins: {
-                    top: 0.75,
+                    top: 0.95,
                     bottom: 0.1,
                 },
                 autoScale: false,

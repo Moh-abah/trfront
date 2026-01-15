@@ -163,14 +163,6 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
                   value={cond.type}
                   // FIX: Use the specific group type updater, not the generic root updater
                   onValueChange={(v) => {
-                    // Since we are inside a recursive render, we rely on the closure that captured 'cond'
-                    // But to update it, we need to call 'onChange' passed to this recursive instance.
-                    // However, since 'cond' is passed as prop, we can't use 'cond' as the state source for update logic directly
-                    // unless we bind it properly. 
-                    // FIX: We use the handlers defined at the top that act on 'condition'.
-                    // But wait, if this is a recursive call, 'condition' is the parent. 
-                    // We need to distinguish.
-                    // Solution: If isRoot, use root handlers. If recursive, use specific child handler passed via map.
                   }}
                   className="w-32"
                 >

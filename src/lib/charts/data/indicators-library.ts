@@ -97,6 +97,51 @@ export const indicatorsLibrary: IndicatorLibrary = {
                 params: { period: 20, threshold: 2.0 }
             }
         },
+
+        {
+            id: 'smc_order_block',
+            name: 'smc_order_block',
+            displayName: 'SMC Order Block',
+            description: 'Identifies Order Blocks and Swing Points using Smart Money Concepts',
+            category: 'custom', // أو 'trend' حسب تصنيفك
+            parameters: [
+                {
+                    name: 'swing_length',
+                    label: 'Swing Length',
+                    type: 'number',
+                    defaultValue: 10,
+                    min: 1,
+                    max: 100,
+                    step: 1,
+                    description: 'عدد الأشرطة للنظر للوراء لتحديد القمم والقيعان'
+                },
+                {
+                    name: 'close_mitigation',
+                    label: 'Close Mitigation',
+                    type: 'boolean',
+                    defaultValue: true,
+                    description: 'استخدام سعر الإغلاق لتحديد إلغاء البلوك (أم الفتح)'
+                }
+            ],
+            seriesType: 'line', // مهم حتى مع Primitive
+            defaultColor: '#FFA500', // لون خط افتراضي
+            defaultLineWidth: 1,
+            defaultParameters: {
+                swing_length: 10,
+                close_mitigation: true
+            },
+            overlay: true, // ⚠️ مهم: يجب أن يكون true للـ Primitive
+            outputCount: 1,
+            hasPrimitive: true, // 🆕 علامة مهمة: أن هذا المؤشر يستخدم Primitive
+            backendConfig: {
+                name: 'smc_order_block',
+                type: 'support_resistance', // أو 'custom'
+                params: {
+                    swing_length: 10,
+                    close_mitigation: true
+                }
+            }
+        },
         {
             id: 'volume_climax',
             name: 'volume_climax',
@@ -212,6 +257,9 @@ export const indicatorsLibrary: IndicatorLibrary = {
             }
         },
 
+
+
+        
         {
             id: 'sma',
             name: 'sma',

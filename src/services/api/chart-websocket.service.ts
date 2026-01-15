@@ -1,3 +1,4 @@
+// const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://127.0.0.1:8000/ws"
 const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://62.169.17.101:8017/ws"
 const ensureCandleContinuity = () => {
     // هذه الدالة تضمن استمرارية الشموع عند الاتصال
@@ -88,7 +89,7 @@ class ChartWebSocketService {
                     symbol: data.symbol,
                     hasLiveCandle: !!data.live_candle,
                     hasCandle: !!data.candle,
-                    indicators: data.indicators, 
+                    indicators: data.indicators,
                     hasIndicators: !!data.indicators,
                     timestamp: new Date().toISOString(),
 
@@ -122,8 +123,8 @@ class ChartWebSocketService {
 
                     case "price_update":
                         if (data.live_candle) {
-                            
-                                new Date(data.live_candle.time).toLocaleTimeString("ar-SA");
+
+                            new Date(data.live_candle.time).toLocaleTimeString("ar-SA");
                             callbacks.onPriceUpdate?.(data);
                         }
                         break
@@ -133,7 +134,7 @@ class ChartWebSocketService {
                             console.log("[v0] 🔒 [WS] Candle closed for period ending at",
                                 new Date(data.candle.time).toLocaleTimeString("ar-SA"));
                             callbacks.onCandleClose?.(data);
-                        
+
                         } else {
                             console.warn("[v0] ⚠️ [WS] Candle close without candle data")
                         }
@@ -230,7 +231,7 @@ class ChartWebSocketService {
             console.log("[v0] 🗑️ [WS] Remove indicator sent:", indicatorId);
         }
     }
-    
+
 
     disconnect() {
         if (this.reconnectTimeout) {

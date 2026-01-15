@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from '@/components/uiadv/button';
 import { Input } from '@/components/uiadv/input';
 import { Label } from '@/components/uiadv/label';
@@ -27,6 +27,7 @@ interface RuleBuilderProps {
 export function RuleBuilder({ entryRules, exitRules, filterRules, onEntryRulesChange, onExitRulesChange, onFilterRulesChange, availableIndicators }: RuleBuilderProps) {
   const [activeTab, setActiveTab] = useState<'entry' | 'exit' | 'filter'>('entry');
   const [expandedRuleId, setExpandedRuleId] = useState<string | null>(null);
+  
 
   const addEntryRule = () => {
     const defaultIndicator = availableIndicators.length > 0 ? `indicator:${availableIndicators[0].name}` : 'indicator:rsi';
@@ -83,64 +84,121 @@ export function RuleBuilder({ entryRules, exitRules, filterRules, onEntryRulesCh
     const isEntry = type === 'entry';
     const isExit = type === 'exit';
     const isFilter = type === 'filter';
+  
+    // ⚡ state محلي للحقل النصي
+    const [localName, setLocalName] = useState(rule.name);
+    const [localWeight, setLocalWeight] = useState(isEntry ? (rule as EntryRule).weight : 0);
+
+
 
     return (
-      <div className={`group border-b border-[#2A2E39] transition-colors duration-150 ${rule.enabled ? 'bg-[#1E222D]' : 'bg-[#131722]/50 opacity-60'}`}>
+      <div className={`group border-b border-border transition-colors duration-150 ${rule.enabled ? 'bg-card' : 'bg-background/50 opacity-60'}`}>
         <div className="flex items-center gap-3 p-3">
-          <div className="cursor-pointer" onClick={toggleHandler}>
-            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${rule.enabled ? 'bg-emerald-600 border-emerald-600' : 'border-[#3E4451] bg-[#0B0E11]'}`}>
-              {rule.enabled && <div className="w-2 h-2 bg-white rounded-sm" />}
+          <div className="" onClick={toggleHandler}>
+            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${rule.enabled ? 'bg-primary border-primary' : 'border-border bg-muted'}`}>
+              {rule.enabled && <div className="w-2 h-2 bg-primary-foreground rounded-sm" />}
             </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <Input value={rule.name} onChange={(e) => updateHandler({ name: e.target.value })} disabled={!rule.enabled} className="h-6 bg-transparent border-0 px-0 text-sm font-medium text-slate-200 focus:ring-0 focus-visible:ring-0 placeholder:text-slate-600" />
+          <div className="hidden sm:flex items-center gap-2 pl-4 border-l border-border">
+            <Input
+              value={localName}
+              onChange={(e) => setLocalName(e.target.value)} // تعديل محلي
+              onBlur={() => updateHandler({ name: localName })} // تحديث الأب عند الانتهاء
+              disabled={!rule.enabled}
+              className="h-6 bg-transparent border-0 px-0 text-sm font-medium text-foreground focus:ring-0 focus-visible:ring-0 placeholder:text-muted-foreground"
+            />
           </div>
           <div className="flex items-center gap-2">
-            {isEntry && <Badge variant="outline" className={`h-5 px-1.5 text-[9px] border-current bg-transparent font-mono uppercase ${typeColor}`}>{(rule as EntryRule).position_side === 'long' ? 'LONG' : (rule as EntryRule).position_side === 'short' ? 'SHORT' : 'BOTH'}</Badge>}
-            {isExit && <Badge variant="outline" className={`h-5 px-1.5 text-[9px] border-current bg-transparent font-mono uppercase ${typeColor}`}>{(rule as ExitRule).exit_type.replace('_', ' ')}</Badge>}
-            {isFilter && <Badge variant="outline" className={`h-5 px-1.5 text-[9px] border-current bg-transparent font-mono uppercase ${typeColor}`}>{(rule as FilterRule).action}</Badge>}
+            {isEntry && (
+              <Badge
+                variant="outline"
+                className={`h-5 px-1.5 text-[9px] border-current bg-transparent font-mono uppercase ${typeColor}`}
+              >
+                {(rule as EntryRule).position_side === 'long' ? 'LONG' : (rule as EntryRule).position_side === 'short' ? 'SHORT' : 'BOTH'}
+              </Badge>
+            )}
+            {isExit && (
+              <Badge
+                variant="outline"
+                className={`h-5 px-1.5 text-[9px] border-current bg-transparent font-mono uppercase ${typeColor}`}
+              >
+                {(rule as ExitRule).exit_type.replace('_', ' ')}
+              </Badge>
+            )}
+            {isFilter && (
+              <Badge
+                variant="outline"
+                className={`h-5 px-1.5 text-[9px] border-current bg-transparent font-mono uppercase ${typeColor}`}
+              >
+                {(rule as FilterRule).action}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="sm" onClick={() => setExpandedRuleId(isExpanded ? null : `${type}-${index}`)} className="h-6 w-6 p-0 text-slate-500 hover:text-slate-300 hover:bg-[#2A2E39]">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpandedRuleId(isExpanded ? null : `${type}-${index}`)}
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+            >
               {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
             </Button>
-            <Button variant="ghost" size="sm" onClick={removeHandler} className="h-6 w-6 p-0 text-slate-500 hover:text-red-400 hover:bg-red-900/10">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={removeHandler}
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
         {isExpanded && (
-          <div className="bg-[#0B0E11] border-t border-[#2A2E39] p-3 animate-in slide-in-from-top-1 duration-200">
+          <div className="bg-muted border-t border-border p-3 animate-in slide-in-from-top-1 duration-200">
             <div className="grid grid-cols-2 gap-3 mb-3">
               {isEntry && (
                 <div>
-                  <Label className="text-[9px] font-bold text-slate-500 uppercase mb-1 block">Position Side</Label>
-                  <Select value={(rule as EntryRule).position_side} onValueChange={(v) => updateHandler({ position_side: v as PositionSide })}>
-                    <SelectTrigger className="h-7 bg-[#131722] border-[#2A2E39] text-[10px] text-slate-300 focus:ring-0 px-2">
+                  <Label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">Position Side</Label>
+                  <Select
+                    value={(rule as EntryRule).position_side}
+                    onValueChange={(v) => updateHandler({ position_side: v as PositionSide })}
+                  >
+                    <SelectTrigger className="h-7 bg-background border-border text-[10px] text-foreground focus:ring-0 px-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#1E222D] border-[#2A2E39] text-[10px] p-1">
-                      <SelectItem value="long" className="px-2 py-1.5 rounded-sm hover:bg-[#2A2E39]">LONG</SelectItem>
-                      <SelectItem value="short" className="px-2 py-1.5 rounded-sm hover:bg-[#2A2E39]">SHORT</SelectItem>
-                      <SelectItem value="both" className="px-2 py-1.5 rounded-sm hover:bg-[#2A2E39]">BOTH</SelectItem>
+                    <SelectContent className="bg-card border-border text-[10px] p-1">
+                      <SelectItem value="long" className="px-2 py-1.5 rounded-sm hover:bg-muted">LONG</SelectItem>
+                      <SelectItem value="short" className="px-2 py-1.5 rounded-sm hover:bg-muted">SHORT</SelectItem>
+                      <SelectItem value="both" className="px-2 py-1.5 rounded-sm hover:bg-muted">BOTH</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
               {isEntry && (
                 <div>
-                  <Label className="text-[9px] font-bold text-slate-500 uppercase mb-1 block">Weight (0-1)</Label>
-                  <Input type="number" step={0.1} min={0} max={1} value={(rule as EntryRule).weight} onChange={(e) => updateHandler({ weight: parseFloat(e.target.value) || 0 })} className="h-7 bg-[#131722] border-[#2A2E39] text-[10px] text-slate-300 focus:ring-0 px-2 font-mono text-right" />
+                  <Label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">Weight (0-1)</Label>
+                  <Input
+                    type="number"
+                    step={0.1}
+                    min={0}
+                    max={1}
+                    value={(rule as EntryRule).weight}
+                    onChange={(e) => updateHandler({ weight: parseFloat(e.target.value) || 0 })}
+                    className="h-7 bg-background border-border text-[10px] text-foreground focus:ring-0 px-2 font-mono text-right"
+                  />
                 </div>
               )}
               {isExit && (
                 <div>
-                  <Label className="text-[9px] font-bold text-slate-500 uppercase mb-1 block">Exit Type</Label>
-                  <Select value={(rule as ExitRule).exit_type} onValueChange={(v) => updateHandler({ exit_type: v as ExitType })}>
-                    <SelectTrigger className="h-7 bg-[#131722] border-[#2A2E39] text-[10px] text-slate-300 focus:ring-0 px-2">
+                  <Label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">Exit Type</Label>
+                  <Select
+                    value={(rule as ExitRule).exit_type}
+                    onValueChange={(v) => updateHandler({ exit_type: v as ExitType })}
+                  >
+                    <SelectTrigger className="h-7 bg-background border-border text-[10px] text-foreground focus:ring-0 px-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#1E222D] border-[#2A2E39] text-[10px] p-1">
+                    <SelectContent className="bg-card border-border text-[10px] p-1">
                       <SelectItem value="signal_exit">Signal Exit</SelectItem>
                       <SelectItem value="stop_loss">Stop Loss</SelectItem>
                       <SelectItem value="take_profit">Take Profit</SelectItem>
@@ -151,18 +209,27 @@ export function RuleBuilder({ entryRules, exitRules, filterRules, onEntryRulesCh
               )}
               {isExit && ['stop_loss', 'take_profit', 'trailing_stop'].includes((rule as ExitRule).exit_type) && (
                 <div>
-                  <Label className="text-[9px] font-bold text-slate-500 uppercase mb-1 block">Value (%)</Label>
-                  <Input type="number" step={0.1} value={(rule as ExitRule).value || ''} onChange={(e) => updateHandler({ value: parseFloat(e.target.value) || undefined })} className="h-7 bg-[#131722] border-[#2A2E39] text-[10px] text-slate-300 focus:ring-0 px-2 font-mono text-right" />
+                  <Label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">Value (%)</Label>
+                  <Input
+                    type="number"
+                    step={0.1}
+                    value={(rule as ExitRule).value || ''}
+                    onChange={(e) => updateHandler({ value: parseFloat(e.target.value) || undefined })}
+                    className="h-7 bg-background border-border text-[10px] text-foreground focus:ring-0 px-2 font-mono text-right"
+                  />
                 </div>
               )}
               {isFilter && (
                 <div>
-                  <Label className="text-[9px] font-bold text-slate-500 uppercase mb-1 block">Action</Label>
-                  <Select value={(rule as FilterRule).action} onValueChange={(v) => updateHandler({ action: v as FilterAction })}>
-                    <SelectTrigger className="h-7 bg-[#131722] border-[#2A2E39] text-[10px] text-slate-300 focus:ring-0 px-2">
+                  <Label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">Action</Label>
+                  <Select
+                    value={(rule as FilterRule).action}
+                    onValueChange={(v) => updateHandler({ action: v as FilterAction })}
+                  >
+                    <SelectTrigger className="h-7 bg-background border-border text-[10px] text-foreground focus:ring-0 px-2">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#1E222D] border-[#2A2E39] text-[10px] p-1">
+                    <SelectContent className="bg-card border-border text-[10px] p-1">
                       <SelectItem value="allow">Allow</SelectItem>
                       <SelectItem value="block">Block</SelectItem>
                       <SelectItem value="delay">Delay</SelectItem>
@@ -173,11 +240,16 @@ export function RuleBuilder({ entryRules, exitRules, filterRules, onEntryRulesCh
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <GitBranch className="h-3.5 w-3.5 text-slate-500" />
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Trigger Condition</span>
+                <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Trigger Condition</span>
               </div>
-              <div className="border border-[#2A2E39] rounded-sm bg-[#131722] p-3">
-                <ConditionBuilder condition={rule.condition} onChange={(cond) => updateHandler({ condition: cond as RuleCondition })} availableIndicators={availableIndicators} index={index} />
+              <div className="border border-border rounded-sm bg-background p-3">
+                <ConditionBuilder
+                  condition={rule.condition}
+                  onChange={(cond) => updateHandler({ condition: cond as RuleCondition })}
+                  availableIndicators={availableIndicators}
+                  index={index}
+                />
               </div>
             </div>
           </div>
@@ -187,70 +259,116 @@ export function RuleBuilder({ entryRules, exitRules, filterRules, onEntryRulesCh
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#131722] border-r border-[#2A2E39]">
-      <div className="h-11 flex items-center justify-between px-4 border-b border-[#2A2E39] bg-[#1E222D] shrink-0">
+    <div className="flex flex-col h-full bg-background border-r border-border">
+      <div className="h-11 flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-purple-500" />
-          <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Execution Logic</span>
+          <Zap className="h-4 w-4 text-primary" />
+          <span className="text-xs font-bold text-foreground uppercase tracking-widest">Execution Logic</span>
         </div>
-        <div className="flex items-center bg-[#131722] rounded-sm p-0.5 border border-[#2A2E39]">
-          <button onClick={() => setActiveTab('entry')} className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wide rounded-sm transition-all flex items-center gap-1.5 ${activeTab === 'entry' ? 'bg-[#2962FF] text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
+        <div className="flex items-center bg-background rounded-sm p-0.5 border border-border">
+          <button
+            onClick={() => setActiveTab('entry')}
+            className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wide rounded-sm transition-all flex items-center gap-1.5 ${activeTab === 'entry' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
             <TrendingUp className="h-3 w-3" />
             Entry ({entryRules.filter(r => r.enabled).length})
           </button>
-          <button onClick={() => setActiveTab('exit')} className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wide rounded-sm transition-all flex items-center gap-1.5 ${activeTab === 'exit' ? 'bg-[#2962FF] text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
+          <button
+            onClick={() => setActiveTab('exit')}
+            className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wide rounded-sm transition-all flex items-center gap-1.5 ${activeTab === 'exit' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
             <TrendingDown className="h-3 w-3" />
             Exit ({exitRules.filter(r => r.enabled).length})
           </button>
-          <button onClick={() => setActiveTab('filter')} className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wide rounded-sm transition-all flex items-center gap-1.5 ${activeTab === 'filter' ? 'bg-[#2962FF] text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
+          <button
+            onClick={() => setActiveTab('filter')}
+            className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wide rounded-sm transition-all flex items-center gap-1.5 ${activeTab === 'filter' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
             <Shield className="h-3 w-3" />
             Filter ({filterRules.filter(r => r.enabled).length})
           </button>
         </div>
       </div>
       <div className="flex-1 overflow-hidden relative">
-        <ScrollArea className="h-full custom-scrollbar bg-[#131722]">
+        <ScrollArea className="h-full custom-scrollbar bg-background">
           {activeTab === 'entry' && (
             <div className="flex flex-col">
               {entryRules.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 border-b border-[#2A2E39]">
-                  <Filter className="h-8 w-8 text-slate-700 mb-2" />
-                  <p className="text-xs text-slate-600 font-mono uppercase">No Entry Rules</p>
+                <div className="flex flex-col items-center justify-center py-16 border-b border-border">
+                  <Filter className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                  <p className="text-xs text-muted-foreground font-mono uppercase">No Entry Rules</p>
                 </div>
               ) : (
-                entryRules.map((rule, index) => <RuleRow key={index} type="entry" rule={rule} index={index} toggleHandler={() => updateEntryRule(index, { enabled: !rule.enabled })} removeHandler={() => removeEntryRule(index)} updateHandler={(u) => updateEntryRule(index, u)} isExpanded={expandedRuleId === `entry-${index}`} />)
+                entryRules.map((rule, index) => (
+                  <RuleRow
+                    key={index}
+                    type="entry"
+                    rule={rule}
+                    index={index}
+                    toggleHandler={() => updateEntryRule(index, { enabled: !rule.enabled })}
+                    removeHandler={() => removeEntryRule(index)}
+                    updateHandler={(u) => updateEntryRule(index, u)}
+                    isExpanded={expandedRuleId === `entry-${index}`}
+                  />
+                ))
               )}
             </div>
           )}
           {activeTab === 'exit' && (
             <div className="flex flex-col">
               {exitRules.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 border-b border-[#2A2E39]">
-                  <Shield className="h-8 w-8 text-slate-700 mb-2" />
-                  <p className="text-xs text-slate-600 font-mono uppercase">No Exit Rules</p>
+                <div className="flex flex-col items-center justify-center py-16 border-b border-border">
+                  <Shield className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                  <p className="text-xs text-muted-foreground font-mono uppercase">No Exit Rules</p>
                 </div>
               ) : (
-                exitRules.map((rule, index) => <RuleRow key={index} type="exit" rule={rule} index={index} toggleHandler={() => updateExitRule(index, { enabled: !rule.enabled })} removeHandler={() => removeExitRule(index)} updateHandler={(u) => updateExitRule(index, u)} isExpanded={expandedRuleId === `exit-${index}`} />)
+                exitRules.map((rule, index) => (
+                  <RuleRow
+                    key={index}
+                    type="exit"
+                    rule={rule}
+                    index={index}
+                    toggleHandler={() => updateExitRule(index, { enabled: !rule.enabled })}
+                    removeHandler={() => removeExitRule(index)}
+                    updateHandler={(u) => updateExitRule(index, u)}
+                    isExpanded={expandedRuleId === `exit-${index}`}
+                  />
+                ))
               )}
             </div>
           )}
           {activeTab === 'filter' && (
             <div className="flex flex-col">
               {filterRules.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 border-b border-[#2A2E39]">
-                  <Ban className="h-8 w-8 text-slate-700 mb-2" />
-                  <p className="text-xs text-slate-600 font-mono uppercase">No Filters</p>
+                <div className="flex flex-col items-center justify-center py-16 border-b border-border">
+                  <Ban className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                  <p className="text-xs text-muted-foreground font-mono uppercase">No Filters</p>
                 </div>
               ) : (
-                filterRules.map((rule, index) => <RuleRow key={index} type="filter" rule={rule} index={index} toggleHandler={() => updateFilterRule(index, { enabled: !rule.enabled })} removeHandler={() => removeFilterRule(index)} updateHandler={(u) => updateFilterRule(index, u)} isExpanded={expandedRuleId === `filter-${index}`} />)
+                filterRules.map((rule, index) => (
+                  <RuleRow
+                    key={index}
+                    type="filter"
+                    rule={rule}
+                    index={index}
+                    toggleHandler={() => updateFilterRule(index, { enabled: !rule.enabled })}
+                    removeHandler={() => removeFilterRule(index)}
+                    updateHandler={(u) => updateFilterRule(index, u)}
+                    isExpanded={expandedRuleId === `filter-${index}`}
+                  />
+                ))
               )}
             </div>
           )}
           <div className="h-4" />
         </ScrollArea>
       </div>
-      <div className="h-10 border-t border-[#2A2E39] bg-[#1E222D] flex items-center px-3 shrink-0">
-        <Button onClick={activeTab === 'entry' ? addEntryRule : activeTab === 'exit' ? addExitRule : addFilterRule} className="w-full h-7 bg-[#2962FF]/10 hover:bg-[#2962FF]/20 text-blue-400 hover:text-blue-300 border border-[#2962FF]/30 rounded-sm text-[10px] font-bold uppercase tracking-wide transition-colors" variant="ghost">
+      <div className="h-10 border-t border-border bg-card flex items-center px-3 shrink-0">
+        <Button
+          onClick={activeTab === 'entry' ? addEntryRule : activeTab === 'exit' ? addExitRule : addFilterRule}
+          className="w-full h-7 bg-primary/10 hover:bg-primary/20 text-primary hover:text-primary-foreground border border-primary/30 rounded-sm text-[10px] font-bold uppercase tracking-wide transition-colors"
+          variant="ghost"
+        >
           <Plus className="h-3.5 w-3.5 ml-1.5" />
           Add New Rule
         </Button>

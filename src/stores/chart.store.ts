@@ -145,11 +145,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
     setMarket: (market) => set({ market }),
 
     initializeChart: (payload) => {
-        console.log("📊 [Store] Initializing chart with payload:", {
-            type: payload.type,
-            hasCandlesData: !!payload.data?.candles,
-            candlesCount: payload.data?.candles?.length || 0,
-        })
+     
 
         if (payload.type === "chart_initialized" && payload.data) {
             const { data } = payload
@@ -219,14 +215,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
 
 
 
-        console.log("[v0] ⚡ Live candle update:", {
-            receivedTime: new Date(candle.time).toISOString(),
-            currentCandleTime: new Date(currentCandleTime).toISOString(),
-            timeframe,
-            interval,
-            hasLiveCandle: !!state.liveCandle,
-            liveCandleTime: state.liveCandle ? new Date(state.liveCandle.time).toISOString() : null
-        });
+     
         const tickPrice = Number(candle.close);
 
 
@@ -255,36 +244,34 @@ export const useChartStore = create<ChartState>((set, get) => ({
                 lastUpdate: Date.now(),
             });
 
-            console.log("[v0] 🆕 First live candle created:", newLiveCandle);
-            return; // نرجع بعد إنشاء أول شمعة، باقي التحديثات ستتم لاحقًا
+            return; 
         }
 
         // إذا لم تكن هناك شمعة حية، أو تغير وقت الشمعة
         if (!state.liveCandle || currentCandleTime !== state.liveCandle.time) {
-            console.log("[v0] 🔄 Candle transition detected");
-
+          
             // إذا كانت هناك شمعة حية سابقة، أغلقها أولاً
             if (state.liveCandle) {
-                console.log("[v0] 🔒🔒🔒🔒🔒🔒🔒 Closing previous live candle:", {
-                    time: new Date(state.liveCandle.time).toISOString(),
-                    open: state.liveCandle.open,
-                    close: state.liveCandle.close,
-                    high: state.liveCandle.high,
-                    low: state.liveCandle.low,
-                });
+                // console.log("[v0] 🔒🔒🔒🔒🔒🔒🔒 Closing previous live candle:", {
+                //     time: new Date(state.liveCandle.time).toISOString(),
+                //     open: state.liveCandle.open,
+                //     close: state.liveCandle.close,
+                //     high: state.liveCandle.high,
+                //     low: state.liveCandle.low,
+                // });
 
-                console.log("[v0] 🆕🆕🆕🆕🆕🆕🆕 Creating new live candle:", {
-                    from: state.liveCandle
-                        ? {
-                            time: new Date(state.liveCandle.time).toISOString(),
-                            close: state.liveCandle.close,
-                        }
-                        : null,
-                    to: {
-                        time: new Date(currentCandleTime).toISOString(),
-                        open: state.liveCandle ? state.liveCandle.close : Number(candle.open),
-                    },
-                });
+                // console.log("[v0] 🆕🆕🆕🆕🆕🆕🆕 Creating new live candle:", {
+                //     from: state.liveCandle
+                //         ? {
+                //             time: new Date(state.liveCandle.time).toISOString(),
+                //             close: state.liveCandle.close,
+                //         }
+                //         : null,
+                //     to: {
+                //         time: new Date(currentCandleTime).toISOString(),
+                //         open: state.liveCandle ? state.liveCandle.close : Number(candle.open),
+                //     },
+                // });
 
                 // إضافة الشمعة السابقة إلى التاريخ
                 const newCandles = [...state.candles];
@@ -323,18 +310,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
                 volume: 0,
             };
 
-            console.log("[v0] 🧬 Candle transition", {
-                from: state.liveCandle
-                    ? {
-                        time: new Date(state.liveCandle.time).toISOString(),
-                        close: state.liveCandle.close,
-                    }
-                    : null,
-                to: {
-                    time: new Date(currentCandleTime).toISOString(),
-                    open: previousClose,
-                },
-            });
+       
             const tickPrice = Number(candle.close); // قيمة حقيقية للـ tick
             newLiveCandle.high = Math.max(newLiveCandle.high, tickPrice);
             newLiveCandle.low = Math.min(newLiveCandle.low, tickPrice);
@@ -357,11 +333,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
                 lastUpdate: Date.now(),
             });
 
-            console.log("[v0] 🆕🆕🆕🆕🆕🆕🆕🆕🆕 New live candle created:", {
-                time: new Date(currentCandleTime).toISOString(),
-                open: newLiveCandle.open,
-                close: newLiveCandle.close
-            });
+      
 
         } else {
             const tickPrice = Number(candle.close);
@@ -387,21 +359,98 @@ export const useChartStore = create<ChartState>((set, get) => ({
                 lastUpdate: Date.now(),
             });
 
-            console.log("[v0] 🔄 Updated existing live candle:", {
-                time: new Date(updatedLiveCandle.time).toISOString(),
-                close: updatedLiveCandle.close
-            });
         }
+
+        // تحديث المؤشرات
+        // if (indicators) {
+        //     set((state) => {
+        //         const updatedIndicators = { ...state.indicators };
+        //         const currentCandleTime = calculateCurrentCandleTime(timeframe);
+
+        //         Object.entries(indicators).forEach(([key, indData]: [string, any]) => {
+
+
+
+        //             if (!updatedIndicators[key]) {
+        //                 // إنشاء مؤشر جديد إذا لم يكن موجوداً
+        //                 const indicatorPoints: IndicatorSeriesPoint[] = indData.values
+        //                     ? indData.values.map((value: number) => ({
+        //                         time: currentCandleTime,
+        //                         value: value
+        //                     }))
+        //                     : [];
+
+        //                 updatedIndicators[key] = {
+        //                     id: key,
+        //                     name: indData.name || key,
+        //                     type: "line",
+        //                     values: indicatorPoints,
+        //                     signals: indData.signals,
+        //                     meta: indData.metadata,
+        //                 };
+        //             } else {
+        //                 // تحديث المؤشر الموجود
+        //                 const existing = updatedIndicators[key];
+        //                 const newValues = [...existing.values];
+
+        //                 // البحث عن قيمة موجودة لنفس الوقت
+        //                 const existingIndex = newValues.findIndex(v => v.time === currentCandleTime);
+
+        //                 if (indData.values && indData.values.length > 0) {
+        //                     const newValue = indData.values[0];
+
+        //                     if (existingIndex >= 0) {
+        //                         // تحديث القيمة الحالية
+        //                         newValues[existingIndex] = {
+        //                             time: currentCandleTime,
+        //                             value: newValue
+        //                         };
+        //                     } else {
+        //                         // إضافة قيمة جديدة
+        //                         newValues.push({
+        //                             time: currentCandleTime,
+        //                             value: newValue
+        //                         });
+        //                     }
+        //                 }
+
+        //                 // تحديث metadata إذا وجد
+        //                 let newMeta = existing.meta;
+        //                 if (indData.metadata) {
+        //                     // دمج metadata القديم مع الجديد
+        //                     newMeta = {
+        //                         ...existing.meta,
+        //                         ...indData.metadata
+        //                     };
+        //                 }
+
+        //                 updatedIndicators[key] = {
+        //                     ...existing,
+        //                     values: newValues,
+        //                     meta: newMeta,
+        //                 };
+        //             }
+        //         });
+
+        //         return { indicators: updatedIndicators };
+        //     });
+        // }
+        // ... (بداية الكود السابق) ...
 
         // تحديث المؤشرات
         if (indicators) {
             set((state) => {
+                // 🔥 نأخذ نسخة من المؤشرات الحالية للحفاظ على التاريخ (Spread)
                 const updatedIndicators = { ...state.indicators };
                 const currentCandleTime = calculateCurrentCandleTime(timeframe);
 
                 Object.entries(indicators).forEach(([key, indData]: [string, any]) => {
 
-
+                    // 🔥🔥🔥 الإصلاح الجذري: التحقق من صحة البيانات القادمة
+                    // إذا كانت المصفوفة فارغة، نتجاهل التحديث لهذا المؤشر (لن نمسح التاريخ)
+                    if (!indData.values || indData.values.length === 0) {
+                        return;
+                    }
 
                     if (!updatedIndicators[key]) {
                         // إنشاء مؤشر جديد إذا لم يكن موجوداً
@@ -464,6 +513,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
                     }
                 });
 
+                // 🔥 إرجاع الكائن المحدث فقط (Merge Strategy)
                 return { indicators: updatedIndicators };
             });
         }
@@ -490,12 +540,47 @@ export const useChartStore = create<ChartState>((set, get) => ({
     },
 
 
+    // closeLiveCandle: (candle, indicators) => {
+    //     const state = get();
+    //     const timeframe = state.timeframe;
+    //     const closedCandleTime = alignToTimeframe(candle.time, timeframe);
+
+    //     const closedCandle: CandleData = {
+    //         time: closedCandleTime,
+    //         open: Number(candle.open),
+    //         high: Number(candle.high),
+    //         low: Number(candle.low),
+    //         close: Number(candle.close),
+    //         volume: Number(candle.volume),
+    //     };
+
+    //     set((currentState) => {
+    //         const newCandles = [...currentState.candles, closedCandle]
+    //             .sort((a, b) => a.time - b.time)
+    //             .slice(-1000);
+
+    //         const currentPrice = {
+    //             price: closedCandle.close,
+    //             change: closedCandle.close - closedCandle.open,
+    //             change_percent: ((closedCandle.close - closedCandle.open) / closedCandle.open) * 100,
+    //         };
+
+    //         const shouldClearLiveCandle = currentState.liveCandle && currentState.liveCandle.time === closedCandleTime;
+
+    //         return {
+    //             candles: newCandles,
+    //             liveCandle: shouldClearLiveCandle ? null : currentState.liveCandle,
+    //             previousLiveCandle: shouldClearLiveCandle ? currentState.liveCandle : currentState.previousLiveCandle,
+    //             currentPrice,
+    //             lastUpdate: Date.now(),
+    //         };
+    //     });
+    // },
     closeLiveCandle: (candle, indicators) => {
         const state = get();
         const timeframe = state.timeframe;
+        // تأكد من توحيد وقت الشمعة القادمة من السيرفر
         const closedCandleTime = alignToTimeframe(candle.time, timeframe);
-
-        console.log(`[Store] 🔒 Closing candle at ${new Date(closedCandleTime).toISOString()}`);
 
         const closedCandle: CandleData = {
             time: closedCandleTime,
@@ -507,9 +592,26 @@ export const useChartStore = create<ChartState>((set, get) => ({
         };
 
         set((currentState) => {
-            const newCandles = [...currentState.candles, closedCandle]
-                .sort((a, b) => a.time - b.time)
-                .slice(-1000);
+            // 👇 تعديل مهم هنا: نأخذ نسخة ونبحث عن الشمعة قبل الإضافة
+            const newCandles = [...currentState.candles];
+
+            // نبحث إذا كان هناك شمعة بنفس الوقت (تم إضافتها مسبقاً بواسطة updateLiveCandle)
+            const existingIndex = newCandles.findIndex(c => c.time === closedCandleTime);
+
+            if (existingIndex >= 0) {
+                // ✅ إذا كانت موجودة، نقوم بتحديث بياناتها ببيانات السيرفر الأدق
+                newCandles[existingIndex] = closedCandle;
+            } else {
+                // ✅ إذا لم تكن موجودة، نقوم بإضافتها
+                newCandles.push(closedCandle);
+            }
+
+            // ترتيب وقص الشموع
+            newCandles.sort((a, b) => a.time - b.time);
+            const maxCandles = 1000;
+            const trimmedCandles = newCandles.length > maxCandles
+                ? newCandles.slice(-maxCandles)
+                : newCandles;
 
             const currentPrice = {
                 price: closedCandle.close,
@@ -520,7 +622,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
             const shouldClearLiveCandle = currentState.liveCandle && currentState.liveCandle.time === closedCandleTime;
 
             return {
-                candles: newCandles,
+                candles: trimmedCandles,
                 liveCandle: shouldClearLiveCandle ? null : currentState.liveCandle,
                 previousLiveCandle: shouldClearLiveCandle ? currentState.liveCandle : currentState.previousLiveCandle,
                 currentPrice,
@@ -529,27 +631,219 @@ export const useChartStore = create<ChartState>((set, get) => ({
         });
     },
 
+    // addIndicatorFromServer: (indicatorName: string, indicatorData: any) => {
+    //     console.log(`📦 [Store] addIndicatorFromServer for ${indicatorName}:`, {
+    //         hasValues: !!indicatorData.values,
+    //         valuesLength: indicatorData.values?.length,
+    //         hasSignals: !!indicatorData.signals,
+    //         signalsIndexLength: indicatorData.signals?.index?.length,
+    //         hasIndData: !!indicatorData.indData,
+    //         source: indicatorData.source
+    //     });
+
+
+    //     const isSMCOrderBlock = indicatorName.toLowerCase().includes('order_block') || indicatorName.toLowerCase().includes('smc');
+
+    //     let values: any[];
+    //     let signals: any;
+    //     let metadata: any;
+
+    //     if (isSMCOrderBlock) {
+    //         console.log(`📦 [Store] 🔴 SMC Order Block detected. Extracting RAW data directly.`);
+
+    //         // 🔥 الخطوة الحاسمة: أخذ القيم من rawData مباشرة
+    //         // وتجاهل indData تماماً لأنه قد يكون قديماً أو فارغاً
+    //         if (indicatorData.rawData && indicatorData.rawData.values) {
+    //             values = indicatorData.rawData.values;
+    //             signals = indicatorData.rawData.signals;
+    //             metadata = indicatorData.rawData.metadata || indicatorData.rawData.meta;
+    //         }
+    //         // Fallback: في حال لم يوجد rawData (مستحيل)، نبحث في الجذر
+    //         else if (indicatorData.values && Array.isArray(indicatorData.values) && indicatorData.values.length > 0) {
+    //             values = indicatorData.values;
+    //             metadata = indicatorData.meta || indicatorData.metadata;
+    //             signals = indicatorData.signals;
+    //         } else {
+    //             console.error(`[Store] ❌ NO DATA FOUND FOR SMC!`, indicatorData);
+    //             return; // لا نستمر إذا لا توجد بيانات
+    //         }
+    //     } 
+
+    //     // 🔥 أولاً: تحديد مصدر البيانات
+    //     const dataSource = indicatorData.indData || indicatorData;
+    //     const { values, signals, metadata } = dataSource;
+
+    //     let indicatorPoints: IndicatorSeriesPoint[] = [];
+
+    //     // 🔥 الحالة 1: إذا كان هناك signals.index (RSI, MACD, Bollinger)
+    //     if (signals?.index && Array.isArray(signals.index)) {
+    //         console.log(`📦 [Store] Using signals.index for ${indicatorName}`);
+
+    //         const minLength = Math.min(values.length, signals.index.length);
+
+    //         for (let i = 0; i < minLength; i++) {
+    //             const value = values[i];
+    //             const timeStr = signals.index[i];
+
+    //             if (!timeStr) continue;
+
+    //             const utcTimeStr = timeStr.includes('T') && !timeStr.endsWith('Z')
+    //                 ? `${timeStr}Z`
+    //                 : timeStr;
+
+    //             const timeMs = new Date(utcTimeStr).getTime();
+    //             const timeSeconds = Math.floor(timeMs / 1000);
+
+    //             indicatorPoints.push({
+    //                 time: timeSeconds,
+    //                 value: Number(value),
+    //             });
+    //         }
+    //     }
+    //     // 🔥 الحالة 2: ATR (بدون signals)
+    //     else if (values && values.length > 0) {
+    //         console.log(`📦 [Store] No signals for ${indicatorName}, using candle times or raw values`);
+
+    //         // 🔥 للمؤشرات التي لا تحتاج تحويل (مثل ATR) نحتفظ بالقيم الخام
+    //         // وسنترك المؤشر نفسه يتعامل مع التحويل
+
+    //         // 🔥 نستخدم candles إذا كانت موجودة
+    //         const candles = get().candles;
+    //         const timeframe = get().timeframe;
+
+    //         if (candles.length > 0 && candles.length >= values.length) {
+    //             const startIndex = Math.max(0, candles.length - values.length);
+
+    //             for (let i = 0; i < values.length; i++) {
+    //                 const value = values[i];
+    //                 const candleIndex = startIndex + i;
+
+    //                 if (candleIndex < candles.length) {
+    //                     indicatorPoints.push({
+    //                         time: candles[candleIndex].time,
+    //                         value: Number(value),
+    //                     });
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     // 🔥 بناء كائن المؤشر مع الحفاظ على البيانات الأصلية
+    //     const newIndicator: any = {
+    //         id: indicatorName,
+    //         name: indicatorName,
+    //         type: "line",
+    //         values: indicatorPoints,
+    //         signals,
+    //         meta: metadata,
+    //         // 🔥 إضافة البيانات الأصلية كخاصية منفصلة
+    //         rawData: {
+    //             values: values,            // القيم الخام
+    //             metadata: metadata,        // metadata الأصلية
+    //             source: indicatorData.source || 'indicator_added',
+    //             isInitialData: true,
+    //             isHistorical: true
+    //         },
+    //         // 🔥 إضافة flags للتمييز
+    //         hasRawData: true,
+    //         isInitialData: true,
+    //         source: indicatorData.source || 'indicator_added'
+    //     };
+
+    //     console.log(`📦 [Store] Created indicator "${indicatorName}" with ${indicatorPoints.length} points`);
+
+    //     set((state) => ({
+    //         indicators: {
+    //             ...state.indicators,
+    //             [indicatorName]: newIndicator,
+    //         },
+    //     }));
+    // },
 
     addIndicatorFromServer: (indicatorName: string, indicatorData: any) => {
-        console.log(`📦 [Store] addIndicatorFromServer for ${indicatorName}:`, {
-            hasValues: !!indicatorData.values,
-            valuesLength: indicatorData.values?.length,
-            hasSignals: !!indicatorData.signals,
-            signalsIndexLength: indicatorData.signals?.index?.length,
-            hasIndData: !!indicatorData.indData,
-            source: indicatorData.source
-        });
+        // console.log(`📦 [Store] addIndicatorFromServer for ${indicatorName}:`, {
+        //     hasValues: !!indicatorData.values,
+        //     valuesLength: indicatorData.values?.length,
+        //     hasSignals: !!indicatorData.signals,
+        //     signalsIndexLength: indicatorData.signals?.index?.length,
+        //     hasIndData: !!indicatorData.indData,
+        //     source: indicatorData.source
+        // });
 
-        // 🔥 أولاً: تحديد مصدر البيانات
+        // =========================================
+        // 🔥 قسم خاص: SMC Order Block
+        // =========================================
+        const isSMC = indicatorName.toLowerCase().includes('order_block') || indicatorName.toLowerCase().includes('smc');
+
+        if (isSMC) {
+        
+            let values: any[];
+            let signals: any;
+            let metadata: any;
+
+            // 1. البحث في rawData (المصدر الصحيح الذي يحتوي 500 نقطة)
+            if (indicatorData.rawData && indicatorData.rawData.values) {
+                values = indicatorData.rawData.values;
+                signals = indicatorData.rawData.signals;
+                metadata = indicatorData.rawData.metadata || indicatorData.rawData.meta;
+           }
+            // 2. البحث في البيانات المباشرة (Backup)
+            else if (indicatorData.values && Array.isArray(indicatorData.values) && indicatorData.values.length > 0) {
+                values = indicatorData.values;
+                metadata = indicatorData.meta || indicatorData.metadata;
+                signals = indicatorData.signals;
+            } else {
+                console.error(`[Store] ❌ No data found for SMC Order Block`);
+                return; // خروج مبكر إذا لم يوجد بيانات
+            }
+
+            // بناء كائن المؤشر الخاص بـ SMC
+            const newIndicator: any = {
+                id: indicatorName,
+                name: indicatorName,
+                type: "line",
+                values: values, // استخدام القيم الخام مباشرة (بدون تحويل لـ Points)
+                signals,
+                meta: metadata,
+                rawData: {
+                    values: values,
+                    metadata: metadata,
+                    source: indicatorData.source || 'indicator_added',
+                    isInitialData: true,
+                    isHistorical: true
+                },
+                hasRawData: true,
+                isInitialData: true,
+                source: indicatorData.source || 'indicator_added'
+            };
+
+         
+            // تحديث الحالة
+            set((state) => ({
+                indicators: {
+                    ...state.indicators,
+                    [indicatorName]: newIndicator,
+                },
+            }));
+
+            // 🔥 خروج مبكر جداً (Return)
+            // هذا يمنع تضارب المتغيرات ويمنع الوصول لكود المؤشرات العادي أدناه
+            return;
+        }
+
+        // =========================================
+        // 🔥 قسم عام: مؤشرات أخرى (RSI, MACD, ATR)
+        // (هذا الكود لن ينفذ إذا كان المؤشر SMC بسبب return أعلاه)
+        // =========================================
+
         const dataSource = indicatorData.indData || indicatorData;
         const { values, signals, metadata } = dataSource;
 
         let indicatorPoints: IndicatorSeriesPoint[] = [];
 
-        // 🔥 الحالة 1: إذا كان هناك signals.index (RSI, MACD, Bollinger)
+        // الحالة 1: RSI, MACD, Bollinger (يحتاجون signals.index)
         if (signals?.index && Array.isArray(signals.index)) {
-            console.log(`📦 [Store] Using signals.index for ${indicatorName}`);
-
+        
             const minLength = Math.min(values.length, signals.index.length);
 
             for (let i = 0; i < minLength; i++) {
@@ -571,16 +865,10 @@ export const useChartStore = create<ChartState>((set, get) => ({
                 });
             }
         }
-        // 🔥 الحالة 2: ATR (بدون signals)
+        // الحالة 2: ATR (بدون signals)
         else if (values && values.length > 0) {
-            console.log(`📦 [Store] No signals for ${indicatorName}, using candle times or raw values`);
-
-            // 🔥 للمؤشرات التي لا تحتاج تحويل (مثل ATR) نحتفظ بالقيم الخام
-            // وسنترك المؤشر نفسه يتعامل مع التحويل
-
-            // 🔥 نستخدم candles إذا كانت موجودة
+          
             const candles = get().candles;
-            const timeframe = get().timeframe;
 
             if (candles.length > 0 && candles.length >= values.length) {
                 const startIndex = Math.max(0, candles.length - values.length);
@@ -599,7 +887,7 @@ export const useChartStore = create<ChartState>((set, get) => ({
             }
         }
 
-        // 🔥 بناء كائن المؤشر مع الحفاظ على البيانات الأصلية
+        // بناء كائن المؤشر للمؤشرات العادية
         const newIndicator: any = {
             id: indicatorName,
             name: indicatorName,
@@ -607,21 +895,17 @@ export const useChartStore = create<ChartState>((set, get) => ({
             values: indicatorPoints,
             signals,
             meta: metadata,
-            // 🔥 إضافة البيانات الأصلية كخاصية منفصلة
             rawData: {
-                values: values,            // القيم الخام
-                metadata: metadata,        // metadata الأصلية
+                values: values,
+                metadata: metadata,
                 source: indicatorData.source || 'indicator_added',
                 isInitialData: true,
                 isHistorical: true
             },
-            // 🔥 إضافة flags للتمييز
             hasRawData: true,
             isInitialData: true,
             source: indicatorData.source || 'indicator_added'
         };
-
-        console.log(`📦 [Store] Created indicator "${indicatorName}" with ${indicatorPoints.length} points`);
 
         set((state) => ({
             indicators: {
@@ -630,8 +914,6 @@ export const useChartStore = create<ChartState>((set, get) => ({
             },
         }));
     },
-
-
     
     // وأيضاً دالة لتحديث المؤشرات عند إغلاق الشمعة
     updateIndicatorsFromServer: (indicatorsData: Record<string, any>) => {

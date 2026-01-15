@@ -5,7 +5,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 
 import {
     createChart,
@@ -15,6 +15,7 @@ import {
     BarSeries,
     LineSeries,
     AreaSeries,
+    LineStyle,
     CrosshairMode,
     type IChartApi,
     type ISeriesApi,
@@ -39,6 +40,7 @@ import { useChartStore } from "@/stores/chart.store"
 import { getBarSpacingForTimeframe } from "@/lib/charts/utils/chart-helper"
 import { IndicatorManager, IndicatorConfig, IndicatorData } from "../indicators"
 import { ChartToolbar } from "../charttoolbar/charttoolbat"
+import toast from "react-hot-toast"
 
 
 export interface CandlestickChartProps {
@@ -85,7 +87,53 @@ const toUTCTimestamp = (time: number | string | Date): UTCTimestamp => {
 };
 
 
+
 const ChartSkeletonLoader = ({ symbol, timeframe }: { symbol: string; timeframe: string }) => {
+    // مصفوفة ثابتة من القيم الصحيحة (بدون كسور)
+    const barValues = [
+        // [upperWick, candleHeight%, lowerWick, isUp]
+        [5, 45, 3, true],
+        [3, 72, 6, false],
+        [8, 38, 2, true],
+        [2, 65, 7, false],
+        [7, 52, 4, true],
+        [4, 78, 3, false],
+        [6, 41, 5, true],
+        [3, 68, 8, false],
+        [9, 34, 2, true],
+        [2, 71, 6, true],
+        [5, 49, 4, false],
+        [7, 56, 3, true],
+        [3, 63, 7, false],
+        [8, 42, 2, true],
+        [4, 75, 5, false],
+        [6, 58, 3, true],
+        [2, 67, 8, false],
+        [9, 36, 1, true],
+        [5, 54, 4, true],
+        [3, 79, 6, false],
+        [7, 47, 3, true],
+        [4, 62, 7, false],
+        [8, 39, 2, true],
+        [2, 73, 5, true],
+        [6, 51, 4, false],
+        [3, 66, 8, false],
+        [9, 37, 1, true],
+        [5, 59, 3, true],
+        [2, 74, 6, false],
+        [7, 44, 2, true],
+        [4, 61, 7, false],
+        [8, 48, 3, true],
+        [3, 69, 5, true],
+        [6, 53, 4, false],
+        [2, 76, 8, false],
+        [9, 35, 1, true],
+        [5, 57, 3, true],
+        [3, 64, 6, false],
+        [7, 46, 2, true],
+        [4, 70, 5, false]
+    ];
+
     const skeletonBars = Array.from({ length: 40 }, (_, i) => i);
 
     return (
@@ -133,8 +181,7 @@ const ChartSkeletonLoader = ({ symbol, timeframe }: { symbol: string; timeframe:
                 {/* شموع وهمية */}
                 <div className="relative h-full flex items-end">
                     {skeletonBars.map((_, i) => {
-                        const height = Math.random() * 60 + 20;
-                        const isUp = Math.random() > 0.5;
+                        const [upperWick, candleHeight, lowerWick, isUp] = barValues[i] || [5, 50, 5, true];
                         const barWidth = 6;
                         const margin = 2;
 
@@ -150,19 +197,19 @@ const ChartSkeletonLoader = ({ symbol, timeframe }: { symbol: string; timeframe:
                                 {/* الفتيل العلوي */}
                                 <div
                                     className="w-px bg-slate-600"
-                                    style={{ height: `${Math.random() * 10}px` }}
+                                    style={{ height: `${upperWick}px` }}
                                 ></div>
 
                                 {/* الجسم */}
                                 <div
                                     className={`w-full rounded-sm ${isUp ? 'bg-emerald-500/30' : 'bg-red-500/30'}`}
-                                    style={{ height: `${height}%` }}
+                                    style={{ height: `${candleHeight}%` }}
                                 ></div>
 
                                 {/* الفتيل السفلي */}
                                 <div
                                     className="w-px bg-slate-600"
-                                    style={{ height: `${Math.random() * 10}px` }}
+                                    style={{ height: `${lowerWick}px` }}
                                 ></div>
                             </div>
                         );
@@ -208,6 +255,7 @@ const ChartSkeletonLoader = ({ symbol, timeframe }: { symbol: string; timeframe:
     );
 };
 
+export default ChartSkeletonLoader;
 
 
 export const CandlestickChart: React.FC<CandlestickChartProps> = ({
@@ -267,11 +315,10 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     // 🔥 دالة للتعامل مع toggle visibility
     const handleToggleIndicator = useCallback((indicatorId: string, isVisible: boolean) => {
-        console.log("🔄 [Chart] Toggle indicator:", indicatorId, isVisible);
-
+     
         if (indicatorManagerRef.current) {
             indicatorManagerRef.current.toggleIndicatorVisibility(indicatorId, isVisible);
-            console.log("✅ [Chart] Indicator visibility toggled");
+    
         } else {
             console.warn("⚠️ [Chart] IndicatorManager not ready yet");
         }
@@ -419,8 +466,19 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
             height: containerHeight, // استخدام الارتفاع المقاس
             crosshair: {
                 mode: CrosshairMode.Magnet,
-                vertLine: chartConfig.crosshair.vertLine,
-                horzLine: chartConfig.crosshair.horzLine,
+                vertLine: {
+                    color: chartConfig.crosshair.vertLine.color,
+                    visible: chartConfig.crosshair.vertLine.visible,
+                    
+                    width: chartConfig.crosshair.vertLine.width ?? 1,
+                    style: LineStyle.Dashed, // أو Solid، حسب ما تريد
+                },
+                horzLine: {
+                    color: chartConfig.crosshair.horzLine.color,
+                    visible: chartConfig.crosshair.horzLine.visible,
+                    width: chartConfig.crosshair.horzLine.width ?? 1,
+                    style: LineStyle.Solid,
+                },
             },
             timeScale: {
                 borderColor: chartConfig.timeScale.borderColor,
@@ -560,12 +618,21 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
                 chartRef.current.priceScale("macd_scale").applyOptions({
                     scaleMargins: { top: 0.45, bottom: 0.25 }
+
                 });
 
-                chartRef.current.priceScale("rsi_scale").applyOptions({
-                    scaleMargins: { top: 0.75, bottom: 0.1 }
-                });
-
+                const rsiScale = chartRef.current.priceScale("rsi_scale");
+                if (rsiScale) {
+                    // احتفظ بـ scaleMargins الحالية، فقط عدل autoScale والحدود
+                    const currentOptions = rsiScale.options();
+                    rsiScale.applyOptions({
+                        autoScale: false,
+                        minimum: 0,
+                        maximum: 100,
+                        borderVisible: true,
+                        // ⚠️ لا تعيد تعيين scaleMargins
+                    });
+                }
                 if (showVolume) {
                     chartRef.current.priceScale("volume").applyOptions({
                         scaleMargins: { top: 0.80, bottom: 0 }
@@ -614,7 +681,6 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
     // أضف هذا useEffect الجديد:
     useEffect(() => {
         if (indicatorManagerRef.current && onIndicatorManagerReady) {
-            console.log("🔄 [Chart] Notifying Page that IndicatorManager is ready");
             onIndicatorManagerReady(indicatorManagerRef.current);
         }
     }, [indicatorManagerRef.current, onIndicatorManagerReady]);
@@ -772,30 +838,30 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
         if (candlestickSeriesRef.current && !indicatorManagerRef.current.hasCandleSeries()) {
             indicatorManagerRef.current.setCandleSeries(candlestickSeriesRef.current);
-            console.log("🎯 [Chart] Candle series set to IndicatorManager");
+      
         }
 
-        Object.entries(indicators).forEach(([key, data]) => {
-            console.log(`📊 [Chart] Indicator "${key}" details:`, {
-                name: data?.name,
-                type: data?.type,
-                valuesLength: data?.values?.length,
-                valuesSample: data?.values ? {
-                    first3: data.values.slice(0, 3),
-                    last3: data.values.slice(-3),
-                    hasNull: data.values.some(v => v === null),
-                    nullCount: data.values.filter(v => v === null).length
-                } : 'No values',
-                metadata: data?.metadata,
-                source: data?.source,
-                isInitialData: data?.isInitialData,
-                isHistorical: data?.isHistorical,
-                isLiveUpdate: data?.isLiveUpdate,
-                hasIndData: !!data?.indData,
-                hasIndicatorsResults: !!data?.indicators_results,
-                fullStructure: data
-            });
-        });
+        // Object.entries(indicators).forEach(([key, data]) => {
+        //     console.log(`📊 [Chart] Indicator "${key}" details:`, {
+        //         name: data?.name,
+        //         type: data?.type,
+        //         valuesLength: data?.values?.length,
+        //         valuesSample: data?.values ? {
+        //             first3: data.values.slice(0, 3),
+        //             last3: data.values.slice(-3),
+        //             hasNull: data.values.some(v => v === null),
+        //             nullCount: data.values.filter(v => v === null).length
+        //         } : 'No values',
+        //         metadata: data?.metadata,
+        //         source: data?.source,
+        //         isInitialData: data?.isInitialData,
+        //         isHistorical: data?.isHistorical,
+        //         isLiveUpdate: data?.isLiveUpdate,
+        //         hasIndData: !!data?.indData,
+        //         hasIndicatorsResults: !!data?.indicators_results,
+        //         fullStructure: data
+        //     });
+        // });
 
         // if (indicators.atr) {
         //     console.log("🔍 [Chart] ATR Detailed Analysis:", {

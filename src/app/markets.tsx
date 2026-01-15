@@ -588,7 +588,6 @@
 //     );
 // }
 
-
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
@@ -614,7 +613,7 @@ import { ScrollArea } from '@/components/uiadv/scroll-area'
 import { useMarketOverviewStore } from '@/stores/market-overview.store'
 import { marketOverviewService } from '@/services/api/market-overview.service'
 import { MarketData } from '@/services/api/market-overview.service'
-import { PremiumSkeletonLoader } from './loding'
+import { PremiumSkeletonLoader } from '../app/loding'
 
 // Helper function to format numbers (TradingView style)
 const formatNumber = (num: number) => {
@@ -807,25 +806,25 @@ export default function MarketsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-slate-200">
+        <div className="min-h-screen trading-dark-bg trading-dark-text-primary">
             {/* Header */}
-            <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-50">
+            <header className="border-b trading-dark-border bg-background/50 backdrop-blur-xl sticky top-0 z-50">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl">
-                                <Activity className="w-6 h-6 text-white" />
+                            <div className="p-2 bg-gradient-to-br from-primary to-primary/80 rounded-xl">
+                                <Activity className="w-6 h-6 text-primary-foreground" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-white">Markets</h1>
-                                <p className="text-sm text-slate-400">Real-time market data</p>
+                                <h1 className="text-2xl font-bold trading-dark-text-primary">Markets</h1>
+                                <p className="text-sm trading-dark-text-secondary">Real-time market data</p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
+                            <div className="flex items-center gap-2 px-3 py-1.5 trading-dark-bg-secondary rounded-lg border trading-dark-border">
                                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                                <span className="text-sm text-slate-300">
+                                <span className="text-sm trading-dark-text-primary">
                                     {isConnected ? 'Live' : 'Offline'}
                                 </span>
                             </div>
@@ -844,20 +843,20 @@ export default function MarketsPage() {
                         <div className="lg:w-80 flex-shrink-0 space-y-4">
                             {/* Search */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-400">Search</label>
+                                <label className="text-sm font-medium trading-dark-text-secondary">Search</label>
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 trading-dark-text-secondary" />
                                     <Input
                                         placeholder="Search symbols..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
+                                        className="pl-10 trading-input-dark placeholder:trading-dark-text-secondary"
                                     />
                                     {searchQuery && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 text-slate-500 hover:text-white"
+                                            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 trading-dark-text-secondary hover:trading-dark-text-primary"
                                             onClick={() => setSearchQuery('')}
                                         >
                                             <X className="w-3 h-3" />
@@ -868,13 +867,15 @@ export default function MarketsPage() {
 
                             {/* Quick Filters */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-400">Quick Filters</label>
+                                <label className="text-sm font-medium trading-dark-text-secondary">Quick Filters</label>
                                 <div className="space-y-2">
                                     <Button
                                         variant={quickFilter === 'gainers' ? "default" : "outline"}
                                         size="sm"
                                         onClick={() => { setQuickFilter('gainers'); setSortBy('change24h'); setSortOrder('desc'); }}
-                                        className={`w-full justify-start transition-colors ${quickFilter === 'gainers' ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600' : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400'}`}
+                                        className={`w-full justify-start transition-all ${quickFilter === 'gainers'
+                                            ? 'bg-primary hover:bg-primary/90 text-primary-foreground border-primary'
+                                            : 'trading-dark-border trading-dark-bg-secondary trading-dark-text-secondary hover:trading-dark-accent hover:border-primary/50'}`}
                                     >
                                         <TrendingUp className="w-4 h-4 mr-2" />
                                         Top Gainers
@@ -883,7 +884,9 @@ export default function MarketsPage() {
                                         variant={quickFilter === 'losers' ? "destructive" : "outline"}
                                         size="sm"
                                         onClick={() => { setQuickFilter('losers'); setSortBy('change24h'); setSortOrder('asc'); }}
-                                        className={`w-full justify-start transition-colors ${quickFilter === 'losers' ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-red-500/10 hover:text-red-400'}`}
+                                        className={`w-full justify-start transition-all ${quickFilter === 'losers'
+                                            ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground border-destructive'
+                                            : 'trading-dark-border trading-dark-bg-secondary trading-dark-text-secondary hover:text-destructive hover:border-destructive/50'}`}
                                     >
                                         <TrendingDown className="w-4 h-4 mr-2" />
                                         Top Losers
@@ -892,7 +895,9 @@ export default function MarketsPage() {
                                         variant={quickFilter === 'high-volume' ? "default" : "outline"}
                                         size="sm"
                                         onClick={() => { setQuickFilter('high-volume'); setSortBy('volume'); setSortOrder('desc'); }}
-                                        className={`w-full justify-start transition-colors ${quickFilter === 'high-volume' ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-blue-500/10 hover:text-blue-400'}`}
+                                        className={`w-full justify-start transition-all ${quickFilter === 'high-volume'
+                                            ? 'bg-primary hover:bg-primary/90 text-primary-foreground border-primary'
+                                            : 'trading-dark-border trading-dark-bg-secondary trading-dark-text-secondary hover:trading-dark-accent hover:border-primary/50'}`}
                                     >
                                         <Activity className="w-4 h-4 mr-2" />
                                         High Volume
@@ -901,7 +906,7 @@ export default function MarketsPage() {
                                         variant="outline"
                                         size="sm"
                                         onClick={() => { setQuickFilter('all'); setSearchQuery(''); }}
-                                        className="w-full justify-start border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-700"
+                                        className="w-full justify-start trading-dark-border trading-dark-bg-secondary trading-dark-text-secondary hover:trading-dark-text-primary"
                                     >
                                         <X className="w-4 h-4 mr-2" />
                                         Clear Filters
@@ -914,7 +919,7 @@ export default function MarketsPage() {
                                 variant="outline"
                                 onClick={handleExport}
                                 disabled={isExporting || finalData.length === 0}
-                                className="w-full border-slate-700 bg-slate-800/50 text-white hover:bg-slate-700"
+                                className="w-full trading-dark-border trading-dark-bg-secondary trading-dark-text-primary hover:trading-dark-text-primary"
                             >
                                 {isExporting ? (
                                     <>
@@ -932,65 +937,65 @@ export default function MarketsPage() {
                             {/* Market Summary Cards */}
                             {marketSummary && (
                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                    <Card className="bg-slate-800/50 border-slate-700">
+                                    <Card className="trading-card-dark animate-scale-in">
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-xs text-slate-400 mb-1">24h Volume</p>
-                                                    <p className="text-lg font-bold text-white">
+                                                    <p className="text-xs trading-dark-text-secondary mb-1">24h Volume</p>
+                                                    <p className="text-lg font-bold trading-dark-text-primary">
                                                         {formatNumber(marketSummary.totalVolume)}
                                                     </p>
                                                 </div>
-                                                <div className="p-2 bg-blue-500/10 rounded-lg">
-                                                    <Activity className="w-5 h-5 text-blue-500" />
+                                                <div className="p-2 bg-primary/10 rounded-lg">
+                                                    <Activity className="w-5 h-5 text-primary" />
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
 
-                                    <Card className="bg-slate-800/50 border-slate-700">
+                                    <Card className="trading-card-dark animate-scale-in" style={{ animationDelay: '0.05s' }}>
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-xs text-slate-400 mb-1">Total Assets</p>
-                                                    <p className="text-lg font-bold text-white">
+                                                    <p className="text-xs trading-dark-text-secondary mb-1">Total Assets</p>
+                                                    <p className="text-lg font-bold trading-dark-text-primary">
                                                         {marketSummary.total}
                                                     </p>
                                                 </div>
-                                                <div className="p-2 bg-slate-500/10 rounded-lg">
-                                                    <PieChart className="w-5 h-5 text-slate-400" />
+                                                <div className="p-2 bg-muted/50 rounded-lg">
+                                                    <PieChart className="w-5 h-5 text-muted-foreground" />
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
 
-                                    <Card className="bg-slate-800/50 border-slate-700">
+                                    <Card className="trading-card-dark animate-scale-in" style={{ animationDelay: '0.1s' }}>
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-xs text-slate-400 mb-1">Gainers</p>
-                                                    <p className="text-lg font-bold text-emerald-400">
+                                                    <p className="text-xs trading-dark-text-secondary mb-1">Gainers</p>
+                                                    <p className="text-lg font-bold text-primary">
                                                         {marketSummary.gainers}
                                                     </p>
                                                 </div>
-                                                <div className="p-2 bg-emerald-500/10 rounded-lg">
-                                                    <TrendingUp className="w-5 h-5 text-emerald-500" />
+                                                <div className="p-2 bg-primary/10 rounded-lg">
+                                                    <TrendingUp className="w-5 h-5 text-primary" />
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
 
-                                    <Card className="bg-slate-800/50 border-slate-700">
+                                    <Card className="trading-card-dark animate-scale-in" style={{ animationDelay: '0.15s' }}>
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-xs text-slate-400 mb-1">Losers</p>
-                                                    <p className="text-lg font-bold text-red-400">
+                                                    <p className="text-xs trading-dark-text-secondary mb-1">Losers</p>
+                                                    <p className="text-lg font-bold text-destructive">
                                                         {marketSummary.losers}
                                                     </p>
                                                 </div>
-                                                <div className="p-2 bg-red-500/10 rounded-lg">
-                                                    <TrendingDown className="w-5 h-5 text-red-500" />
+                                                <div className="p-2 bg-destructive/10 rounded-lg">
+                                                    <TrendingDown className="w-5 h-5 text-destructive" />
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -999,15 +1004,15 @@ export default function MarketsPage() {
                             )}
 
                             {/* Market Table */}
-                            <Card className="bg-slate-800/50 border-slate-700 overflow-hidden">
-                                <CardHeader className="pb-4">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-white">
+                            <Card className="trading-card-dark overflow-hidden">
+                                <CardHeader className="pb-4 border-b trading-dark-border">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <CardTitle className="trading-dark-text-primary">
                                             Cryptocurrency Market
                                         </CardTitle>
                                         <div className="flex gap-2">
                                             {/* Manual Sort Controls in Header */}
-                                            <div className="flex bg-slate-900/50 rounded-lg p-1 border border-slate-700">
+                                            <div className="flex trading-dark-bg-tertiary rounded-lg p-1 border trading-dark-border">
                                                 {[
                                                     { id: 'volume', label: 'Volume' },
                                                     { id: 'change24h', label: 'Change' },
@@ -1016,7 +1021,9 @@ export default function MarketsPage() {
                                                     <button
                                                         key={col.id}
                                                         onClick={() => handleSort(col.id as any)}
-                                                        className={`px-3 py-1 text-xs rounded-md font-medium transition-all ${sortBy === col.id ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                                                        className={`px-3 py-1 text-xs rounded-md font-medium transition-all touch-target ${sortBy === col.id
+                                                            ? 'trading-dark-bg-secondary trading-dark-text-primary shadow-sm'
+                                                            : 'trading-dark-text-secondary hover:trading-dark-text-primary'}`}
                                                     >
                                                         {col.label}
                                                         {sortBy === col.id && (
@@ -1029,53 +1036,51 @@ export default function MarketsPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <ScrollArea className="h-[600px]">
+                                    <ScrollArea className="h-[600px] custom-scrollbar">
                                         <div className="w-full">
                                             {/* Table Header */}
-                                            <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-900/50 border-b border-slate-700 text-xs font-medium text-slate-400">
+                                            <div className="grid grid-cols-12 gap-4 px-4 py-3 trading-dark-bg-tertiary border-b trading-dark-border text-xs font-medium trading-dark-text-secondary sticky top-0 z-10">
                                                 <div className="col-span-3">Symbol</div>
-                                                <div className="col-span-3 text-right cursor-pointer hover:text-white" onClick={() => handleSort('price')}>Price</div>
-                                                <div className="col-span-3 text-right cursor-pointer hover:text-white" onClick={() => handleSort('change24h')}>24h %</div>
-                                                <div className="col-span-3 text-right cursor-pointer hover:text-white" onClick={() => handleSort('volume')}>Volume</div>
+                                                <div className="col-span-3 text-right cursor-pointer hover:trading-dark-text-primary transition-colors" onClick={() => handleSort('price')}>Price</div>
+                                                <div className="col-span-3 text-right cursor-pointer hover:trading-dark-text-primary transition-colors" onClick={() => handleSort('change24h')}>24h %</div>
+                                                <div className="col-span-3 text-right cursor-pointer hover:trading-dark-text-primary transition-colors" onClick={() => handleSort('volume')}>Volume</div>
                                             </div>
 
                                             {/* Table Body */}
-                                            {/* Table Body */}
                                             <div>
-                                                {markets.length === 0 ? (  
+                                                {markets.length === 0 ? (
                                                     <PremiumSkeletonLoader />
-
                                                 ) : finalData.length === 0 && !isLoading ? (
                                                     <div className="p-12 text-center">
-                                                        <Search className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                                                        <p className="text-slate-400 mb-2">No results found</p>
+                                                        <Search className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                                                        <p className="text-muted-foreground mb-2">No results found</p>
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
                                                             onClick={() => { setSearchQuery(''); setQuickFilter('all'); }}
-                                                            className="border-slate-700 text-slate-400"
+                                                            className="border-border text-muted-foreground"
                                                         >
                                                             Clear filters
                                                         </Button>
                                                     </div>
                                                 ) : (
                                                     finalData.map((item, index) => (
-                                                        // ... leave all the existing rows code exactly as is
                                                         <div
                                                             key={item.symbol}
                                                             onClick={() => router.push(`/chart/${item.symbol}?market=${activeTab}`)}
-                                                            className="grid grid-cols-12 gap-4 px-4 py-4 border-b border-slate-700/50 hover:bg-slate-700/30 cursor-pointer transition-colors group"
+                                                            className="grid grid-cols-12 gap-4 px-4 py-4 border-b trading-dark-border/50 hover:trading-dark-bg-secondary/50 cursor-pointer transition-all duration-200 group animate-slide-in touch-target"
+                                                            style={{ animationDelay: `${index * 0.02}s` }}
                                                         >
                                                             <div className="col-span-3">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-xs font-bold text-white">
+                                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-muted to-card flex items-center justify-center text-xs font-bold trading-dark-text-primary ring-1 trading-dark-border">
                                                                         {item.symbol.slice(0, 2)}
                                                                     </div>
                                                                     <div>
-                                                                        <p className="font-medium text-white group-hover:text-emerald-400 transition-colors">
+                                                                        <p className="font-medium trading-dark-text-primary group-hover:text-primary transition-colors">
                                                                             {item.symbol}
                                                                         </p>
-                                                                        <p className="text-xs text-slate-500">
+                                                                        <p className="text-xs trading-dark-text-secondary">
                                                                             Vol: {formatNumber(item.volume)}
                                                                         </p>
                                                                     </div>
@@ -1083,7 +1088,7 @@ export default function MarketsPage() {
                                                             </div>
 
                                                             <div className="col-span-3 text-right">
-                                                                <p className="font-mono font-medium text-white text-sm">
+                                                                <p className="font-mono font-medium trading-dark-text-primary text-sm">
                                                                     {formatPrice(item.price)}
                                                                 </p>
                                                             </div>
@@ -1091,9 +1096,9 @@ export default function MarketsPage() {
                                                             <div className="col-span-3 text-right">
                                                                 <Badge
                                                                     variant={item.change24h >= 0 ? "default" : "destructive"}
-                                                                    className={`px-2 py-1 font-mono ${item.change24h >= 0
-                                                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
-                                                                        : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                                                                    className={`px-2 py-1 font-mono transition-all ${item.change24h >= 0
+                                                                        ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
+                                                                        : 'bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20'
                                                                         }`}
                                                                 >
                                                                     {formatPercent(item.change24h)}
@@ -1101,7 +1106,7 @@ export default function MarketsPage() {
                                                             </div>
 
                                                             <div className="col-span-3 text-right">
-                                                                <p className="text-sm text-slate-300 font-mono">
+                                                                <p className="text-sm trading-dark-text-primary/80 font-mono">
                                                                     {formatNumber(item.volume)}
                                                                 </p>
                                                             </div>
@@ -1115,8 +1120,11 @@ export default function MarketsPage() {
                             </Card>
 
                             {/* Last Updated */}
-                            <div className="text-center text-sm text-slate-500">
-                                Last updated: {lastUpdated.toLocaleTimeString()} • Connected via WebSocket
+                            <div className="text-center text-sm trading-dark-text-secondary animate-pulse-subtle">
+                                <div className="flex items-center justify-center gap-2">
+                                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                                    Last updated: {lastUpdated.toLocaleTimeString()} • Connected via WebSocket
+                                </div>
                             </div>
                         </div>
                     </div>

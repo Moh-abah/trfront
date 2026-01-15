@@ -351,6 +351,16 @@ export const INDICATORS_REGISTRY: IndicatorMetadata[] = [
     },
 
     // Support & Resistance Indicators
+
+    {
+        name: 'smc_order_block',
+        display_name: 'SMC Order Block',
+        description: 'تحديد بلوكات الأوردر بناءً على سوينغ',
+        category: 'support_resistance',
+        default_params: { swing_length: 10, close_mitigation: true },
+   
+    },
+
     {
         name: 'supply_demand',
         display_name: 'Supply & Demand Zones',

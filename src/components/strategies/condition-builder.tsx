@@ -154,6 +154,15 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
     const isCondComposite = 'type' in cond && (cond.type === 'and' || cond.type === 'or');
     const isRoot = condIndex === undefined;
 
+
+
+    const [localLeft, setLocalLeft] = useState(
+      typeof condition.left_value === 'number' ? condition.left_value : 0
+    );
+    const [localRight, setLocalRight] = useState(
+      typeof condition.right_value === 'number' ? condition.right_value : 0
+    );
+
     return (
       <div key={condIndex} className={`border ${isCondComposite ? 'border-[#2A2E39] bg-[#0B0E11] rounded-sm p-3' : 'border-transparent'}`}>
 
@@ -325,13 +334,21 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
                 {/* If Number -> Input */}
                 {typeof cond.left_value === 'number' ? (
                   <div className="flex gap-1">
-                    <Input
+                    {/* <Input
                       type="number"
                       step={0.01}
                       value={cond.left_value}
                       onChange={(e) => onChange({ ...cond, left_value: parseFloat(e.target.value) || 0 })}
                       className="h-8 w-full bg-[#0B0E11] border-[#2A2E39] text-[10px] text-slate-200 font-mono focus:ring-0"
-                    />
+                    /> */}
+                      <Input
+                        type="number"
+                        step={0.01}
+                        value={localLeft}
+                        onChange={(e) => setLocalLeft(parseFloat(e.target.value) || 0)}
+                        onBlur={() => onChange({ ...cond, left_value: localLeft })}
+                        className="h-8 w-full bg-[#0B0E11] border-[#2A2E39] text-[10px] text-slate-200 font-mono focus:ring-0"
+                      />
                     <Button
                       size="sm"
                       variant="ghost"
@@ -377,13 +394,15 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
 
                 {typeof cond.right_value === 'number' ? (
                   <div className="flex gap-1">
-                    <Input
-                      type="number"
-                      step={0.01}
-                      value={cond.right_value}
-                      onChange={(e) => onChange({ ...cond, right_value: parseFloat(e.target.value) || 0 })}
-                      className="h-8 w-full bg-[#0B0E11] border-[#2A2E39] text-[10px] text-slate-200 font-mono focus:ring-0"
-                    />
+                      <Input
+                        type="number"
+                        step={0.01}
+                        value={localRight}
+                        onChange={(e) => setLocalRight(parseFloat(e.target.value) || 0)}
+                        onBlur={() => onChange({ ...cond, right_value: localRight })}
+                        className="h-8 w-full bg-[#0B0E11] border-[#2A2E39] text-[10px] text-slate-200 font-mono focus:ring-0"
+                      />
+                      
                     <Button
                       size="sm"
                       variant="ghost"

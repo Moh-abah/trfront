@@ -47,10 +47,6 @@ export class RSIIndicator extends BaseIndicator {
         const osLevel = metadata?.oversold;   // في مثالك: 50
 
 
-        console.log(`[RSI] 🛠️ Applying Dynamic Levels: OB=${obLevel}, OS=${osLevel}`);
-        console.log("Full Metadata received in Indicator:", metadata);
-
- 
         if (obLevel ) {
             this.mainSeries.createPriceLine({
                 price: obLevel,
@@ -116,7 +112,6 @@ export class RSIIndicator extends BaseIndicator {
 
                 // استبدال البيانات القديمة بالمدمجة
                 this.mainSeries.setData(mergedData);
-                console.log(`[RSI] 🔄 Live update: ${value} at ${data.liveTime}`);
             }
             return;
         }
@@ -137,11 +132,9 @@ export class RSIIndicator extends BaseIndicator {
         if (currentData.length > 0) {
             // دمج البيانات القديمة مع الجديدة
             mergedData = this.mergeData(currentData, processedData);
-            console.log(`[RSI] 🔄 Merging ${currentData.length} existing + ${processedData.length} new points`);
         } else {
             // أول مرة، استخدم البيانات الجديدة كما هي
             mergedData = processedData;
-            console.log(`[RSI] 📊 Initial data set: ${processedData.length} points`);
         }
 
         // تطبيق البيانات المدمجة

@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
         <aside
             className={cn(
                 'fixed lg:static inset-y-0 left-0 z-40',
-                'bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700',
+                'bg-background dark:bg-background border-r border-border dark:border-border',
                 'transition-all duration-300 ease-in-out',
                 sidebarCollapsed ? 'w-[72px]' : 'w-auto',
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
 
             <div className="flex flex-col h-full">
           
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="p-4 border-b border-border dark:border-border">
                     <div className="flex items-center justify-between overflow-hidden">
 
                         {/* منطقة الشعار - تختفي أو تتقلص عند التصغير */}
