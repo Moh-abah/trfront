@@ -29,13 +29,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex h-screen overflow-hidden">
             <Sidebar />
             <div className="flex-1 flex flex-col min-h-0">
-              <Header className="flex-shrink-0" />
+              {/* <Header className="flex-shrink-0" /> */}
               <main className="flex-1 overflow-auto min-h-0">
                 {children}
               </main>
             </div>
           </div>
-          {/* حذف Toaster هنا إذا كنت لا تحتاجه */}
+        
         </Providers>
       </body>
     </html>

@@ -3,7 +3,7 @@ import { toast } from 'react-hot-toast';
 import { StrategyConfig } from '@/types/strategy';
 
 // رابط الـ API الأساسي (تأكد أنه يطابق عنوان باك-تستك)
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://62.169.17.101:8017/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://161.97.73.254:8017/api/v1';
 
 export class StrategyService {
     /**

@@ -2,7 +2,7 @@
 // @ts-nocheck
 // src/config/api.config.ts
 export const apiConfig = {
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://62.169.17.101:8017',
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://161.97.73.254:8017',
     timeout: 30000,
     endpoints: {
         // Core endpoints
@@ -107,7 +107,7 @@ export const apiConfig = {
 
         // WebSocket endpoints - متوافق مع الباك إند
         websocket: {
-            base: 'ws://62.169.17.101:8017/ws',
+            base: 'ws://161.97.73.254:8017/ws',
             stream: '/ws/stream/{symbol}/{timeframe}',
             multi: '/ws/stream/multi',
             active: '/ws/stream/active',

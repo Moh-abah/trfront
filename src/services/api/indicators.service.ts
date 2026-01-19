@@ -1,5 +1,5 @@
 // services/api/indicators.service.ts
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://62.169.17.101:8017';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://161.97.73.254:8017';
 
 // services/api/indicators.service.ts
 export const indicatorsService = {
@@ -38,7 +38,7 @@ export const indicatorsService = {
         return {
             ...data,
             websocketUrl: data.live_monitoring?.websocket_url ||
-                `ws://62.169.17.101:8017/ws/indicators/${symbol}`
+                `ws://161.97.73.254:8017/ws/indicators/${symbol}`
         };
     },
 

@@ -27,6 +27,7 @@ export type FilterAction = 'allow' | 'block' | 'delay';
 export type IndicatorCategory = 'trend' | 'momentum' | 'volatility' | 'volume' | 'support_resistance' | 'pattern_recognition';
 
 export interface IndicatorConfig {
+    id?: string;
     name: string;
     type: IndicatorCategory;
     params: Record<string, number | string>;

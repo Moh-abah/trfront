@@ -1,5 +1,5 @@
 // services/api/chart.service.ts
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://62.169.17.101:8017';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://161.97.73.254:8017';
 
 export const chartService = {
     async getHistoricalData(market: 'crypto' | 'stocks', symbol: string, timeframe: string) {

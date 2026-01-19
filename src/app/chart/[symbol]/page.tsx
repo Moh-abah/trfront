@@ -496,13 +496,14 @@ import { MarketOverviewDropdown } from "@/components/market-overview/MarketOverv
 
 import { CandlestickChart } from "../../../components/charts/CandlestickChart/CandlestickChart"
 import { IndicatorsPanel } from "../../../components/indicators/IndicatorsPanel/IndicatorsPanel"
-import { Button } from "../../../components/ui/Button/Button"
+
 import { Alert } from "../../../components/ui/Alert/Alert"
 import { chartWebSocketService } from "@/services/api/chart-websocket.service"
 import { useChartStore } from "@/stores/chart.store"
 import { IndicatorManager } from "@/components/charts/indicators"
 import { DrawingTools } from "@/components/charts/CandlestickChart/DrawingTools"
 import { IChartApi } from "lightweight-charts"
+import { Button } from "@/components/uiadv/button"
 
 export default function ChartPage() {
     const router = useRouter()
@@ -512,6 +513,37 @@ export default function ChartPage() {
     const symbol = params.symbol as string
     const market = (searchParams.get("market") as "crypto" | "stocks") || "crypto"
     const timeframe = searchParams.get("timeframe") || "1m"
+
+    const urlTimeframe = searchParams.get("timeframe")
+
+    // ✅ الحل: أولوية للوقت المنقضي من localStorage، ثم من الرابط
+    const [currentTimeframe, setCurrentTimeframe] = useState(() => {
+        if (typeof window !== 'undefined') {
+            // دائمًا نأخذ القيمة المحفوظة من localStorage أولاً
+            const savedTimeframe = localStorage.getItem('chart-timeframe');
+
+            // إذا كان هناك timeframe في الرابط، نحدث localStorage به
+            if (urlTimeframe) {
+                localStorage.setItem('chart-timeframe', urlTimeframe);
+                return urlTimeframe;
+            }
+
+            // إذا لم يكن هناك timeframe في الرابط، نستخدم القيمة المحفوظة
+            return savedTimeframe || "1m";
+        }
+        return urlTimeframe || "1m";
+    });
+
+
+    useEffect(() => {
+        // إذا لم يكن هناك timeframe في الرابط، نضيف الفريم المحفوظ
+        if (!urlTimeframe && currentTimeframe) {
+            router.replace(`/chart/${symbol}?market=${market}&timeframe=${currentTimeframe}`, { scroll: false });
+        }
+    }, [symbol, market, urlTimeframe, currentTimeframe, router]);
+
+
+    
     const chartInstanceRef = useRef<IChartApi | null>(null)
     // UI State
     const [showIndicators, setShowIndicators] = useState(false)
@@ -557,11 +589,12 @@ export default function ChartPage() {
     useEffect(() => {
 
         setSymbol(symbol)
-        setTimeframe(timeframe)
+      
+        setTimeframe(currentTimeframe);
         setMarket(market)
         setLoading(true)
 
-        chartWebSocketService.connectToChart(symbol, timeframe, market, {
+        chartWebSocketService.connectToChart(symbol, currentTimeframe, market, {
             onChartInitialized: (data) => {
 
                 initializeChart(data)
@@ -602,6 +635,8 @@ export default function ChartPage() {
                 }
             },
 
+            
+
             onIndicatorAdded: (data) => {
 
                 const { indicators_results } = data;
@@ -628,6 +663,41 @@ export default function ChartPage() {
                 toast.success(`تمت إضافة ${data.indicator || "المؤشر"}`);
             },
 
+
+            onIndicatorUpdated: (data) => {
+                console.log("[v0] ✏️ [Page] Indicator updated from server:", data);
+
+                if (data.indicators_results) {
+                    // ✅ استخدام updateIndicatorsFromServer لإجبار تحديث البيانات التاريخية بالكامل
+                    const store = useChartStore.getState();
+                    store.updateIndicatorsFromServer(data.indicators_results);
+
+                    // ✅ إجبار مدير الشارت على المزامنة فوراً لرسم البيانات الجديدة
+                    if (indicatorManagerRef.current) {
+                        const updatedIndicators = store.indicators;
+                        indicatorManagerRef.current.syncIndicators(updatedIndicators);
+                    }
+                }
+                toast.success(`تم تحديث المؤشر ${data.indicator}`);
+            },
+
+            onIndicatorRemoved: (data) => {
+                console.log("[v0] 🗑️ [Page] Indicator removed from server:", data);
+
+                // ✅ الحل الصحيح: تحديث الـ Store فقط
+                const store = useChartStore.getState();
+                const indicatorId = data.indicator_name || data.indicator;
+
+                // الحذف من الـ Store سيقوم بإشعار مكون CandlestickChart
+                // والذي سيقوم بدوره باستدعاء syncIndicators لإزالة الخطوط تلقائياً
+                if (indicatorId) {
+                    store.removeIndicator(indicatorId);
+                }
+
+                toast.success(`تم حذف المؤشر`);
+            },
+
+
             onConnected: () => {
 
                 setConnected(true)
@@ -651,13 +721,16 @@ export default function ChartPage() {
 
             chartWebSocketService.disconnect()
         }
-    }, [symbol, market, timeframe])
+    }, [symbol, market, currentTimeframe])
 
 
 
     // Handlers (دون تغيير في المنطق)
     const handleTimeframeChange = useCallback(
         (newTimeframe: string) => {
+            localStorage.setItem('chart-timeframe', newTimeframe);
+
+            setCurrentTimeframe(newTimeframe);
 
             chartWebSocketService.disconnect()
             router.push(`/chart/${symbol}?market=${market}&timeframe=${newTimeframe}`)
@@ -714,11 +787,22 @@ export default function ChartPage() {
         [symbol, isConnected],
     )
 
+
+    const handleUpdateIndicator = useCallback((name: string, params: any) => {
+        if (!isConnected) {
+            toast.error("غير متصل بالخادم")
+            return
+        }
+        chartWebSocketService.updateIndicator(symbol, name, params)
+        toast.success("تم تحديث المؤشر")
+    }, [symbol, isConnected])
+
+
     const handleSaveLayout = useCallback(() => {
-        const layout = { symbol, timeframe, market, indicators }
+        const layout = { symbol, timeframe: currentTimeframe, market, indicators }
         localStorage.setItem(`chart_layout_${symbol}`, JSON.stringify(layout))
         toast.success("تم حفظ الإعدادات")
-    }, [symbol, timeframe, market, indicators])
+    }, [symbol, currentTimeframe, market, indicators])
 
     const handleShareChart = useCallback(() => {
         navigator.clipboard.writeText(window.location.href)
@@ -755,6 +839,8 @@ export default function ChartPage() {
         { label: "1أ", value: "1w" },
     ]
 
+    
+
 
     const formatPrice = (price: number) => {
         if (price === 0) return "0.00";
@@ -777,7 +863,7 @@ export default function ChartPage() {
 
 
     return (
-        // التعديل: إضافة min-w-0 و overflow-hidden لضمان عدم تجاوز الحدود عند التغييرات
+   
         <div className={`flex flex-col h-full bg-[#131722] text-[#d1d4dc] font-sans select-none min-w-0 overflow-hidden ${isFullscreen ? "fixed inset-0 z-50" : ""}`}>
 
             {/* Error Alert Overlay */}
@@ -789,39 +875,48 @@ export default function ChartPage() {
                 </div>
             )}
 
+ 
             {/* --- Header Toolbar --- */}
-            <header className="h-12 bg-[#1e222d] border-b border-[#2a2e39] flex items-center justify-between px-2 md:px-4 shrink-0 z-50 shadow-lg relative">
-                {/* ... محتوى الهيدر نفسه ... */}
+            <header className="h-12 bg-[var(--header-bg)] border-b border-border flex items-center justify-between px-2 md:px-4 shrink-0 z-50 shadow-lg relative">
 
                 {/* Left: Symbol Info */}
-
                 <div className="flex items-center gap-4 min-w-0">
                     <button
                         onClick={() => setShowMarketOverview(!showMarketOverview)}
-                        className="flex items-center gap-2 hover:bg-[#2a2e39] px-2 py-1 rounded transition-colors group"
+                        className="flex items-center gap-2 hover:bg-muted px-2 py-1 rounded transition-colors group"
                     >
-                        <h1 className="text-lg font-bold text-white group-hover:text-[#2962ff] transition-colors truncate">
+                        <h1 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors truncate">
                             {symbol}
                         </h1>
                         <ChevronDown
-                            className={`w-4 h-4 text-[#787b86] transition-transform ${showMarketOverview ? "rotate-180" : ""
+                            className={`w-4 h-4 text-muted-foreground transition-transform ${showMarketOverview ? "rotate-180" : ""
                                 }`}
                         />
                     </button>
 
                     {currentPrice && (
                         <div className="flex items-center gap-3">
-                            <span className="text-lg font-medium text-white font-mono tracking-tight">
+                            <span className="text-lg font-medium text-foreground font-mono tracking-tight">
                                 {formatPrice(currentPrice.price)}
-
                             </span>
-                            <div className={`hidden md:flex items-center gap-1 text-xs font-bold font-mono px-1.5 py-0.5 rounded ${currentPrice.change >= 0 ? 'bg-[#0899811a]' : 'bg-[#f236451a]'}`}>
+                            <div
+                                className={`hidden md:flex items-center gap-1 text-xs font-bold font-mono px-1.5 py-0.5 rounded ${currentPrice.change >= 0
+                                        ? "bg-green-500/10 dark:bg-green-500/20"
+                                        : "bg-red-500/10 dark:bg-red-500/20"
+                                    }`}
+                            >
                                 {currentPrice.change >= 0 ? (
-                                    <TrendingUp className="w-3 h-3" />
+                                    <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" />
                                 ) : (
-                                    <TrendingDown className="w-3 h-3" />
+                                    <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
                                 )}
-                                <span className={currentPrice.change >= 0 ? "text-[#089981]" : "text-[#f23645]"}>
+                                <span
+                                    className={
+                                        currentPrice.change >= 0
+                                            ? "text-green-600 dark:text-green-400"
+                                            : "text-red-600 dark:text-red-400"
+                                    }
+                                >
                                     {currentPrice.change >= 0 ? "+" : ""}
                                     {currentPrice.change.toFixed(2)}%
                                 </span>
@@ -831,14 +926,14 @@ export default function ChartPage() {
                 </div>
 
                 {/* Center: Timeframes */}
-                <div className="flex items-center bg-[#2a2e39] rounded p-0.5 mx-2 overflow-x-auto max-w-full no-scrollbar">
+                <div className="flex items-center bg-muted rounded p-0.5 mx-2 overflow-x-auto max-w-full no-scrollbar">
                     {timeframeButtons.map((tf) => (
                         <button
                             key={tf.value}
                             onClick={() => handleTimeframeChange(tf.value)}
                             className={`px-3 py-1 text-xs font-medium rounded transition-all duration-200 whitespace-nowrap ${timeframe === tf.value
-                                ? "bg-[#2962ff] text-white shadow-sm"
-                                : "text-[#d1d4dc] hover:bg-[#363a45]"
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                 }`}
                         >
                             {tf.label}
@@ -852,26 +947,30 @@ export default function ChartPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowIndicators(!showIndicators)}
-                        className={`h-8 w-8 p-0 rounded hover:bg-[#2a2e39] text-[#d1d4dc] ${showIndicators ? 'text-[#2962ff]' : ''}`}
+                        className={`h-8 w-8 p-0 rounded hover:bg-muted text-muted-foreground ${showIndicators ? "text-primary" : ""
+                            }`}
                         title="المؤشرات"
                     >
                         <LayoutTemplate className="w-4 h-4" />
                     </Button>
-                    <div className="w-px h-5 bg-[#363a45] mx-1" />
+
+                    <div className="w-px h-5 bg-border mx-1" />
+
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={handleSaveLayout}
-                        className="h-8 w-8 p-0 rounded hover:bg-[#2a2e39] text-[#d1d4dc]"
+                        className="h-8 w-8 p-0 rounded hover:bg-muted text-muted-foreground"
                         title="حفظ التخطيط"
                     >
                         <Settings className="w-4 h-4" />
                     </Button>
+
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={toggleFullscreen}
-                        className="h-8 w-8 p-0 rounded hover:bg-[#2a2e39] text-[#d1d4dc]"
+                        className="h-8 w-8 p-0 rounded hover:bg-muted text-muted-foreground"
                         title={isFullscreen ? "خروج من ملء الشاشة" : "ملء الشاشة"}
                     >
                         <Maximize2 className="w-4 h-4" />
@@ -889,18 +988,16 @@ export default function ChartPage() {
 
             {showIndicators && (
                 <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center">
-
-                    <div className="w-[90vw] max-w-[900px] max-h-[80vh] bg-[#1e222d] border border-[#2a2e39] rounded-lg shadow-2xl flex flex-col animate-scale-in">
-
+                    <div className="w-[90vw] max-w-[900px] max-h-[80vh] bg-card border border-border rounded-lg shadow-2xl flex flex-col animate-scale-in">
                         {/* Header */}
-                        <div className="h-12 flex items-center justify-between px-4 border-b border-[#2a2e39]">
-                            <h2 className="font-semibold text-white text-sm flex items-center gap-2">
-                                <Activity className="w-4 h-4 text-[#2962ff]" />
-
+                        <div className="h-12 flex items-center justify-between px-4 border-b border-border">
+                            <h2 className="font-semibold text-foreground text-sm flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-primary" />
+                                المؤشرات الفنية
                             </h2>
                             <button
                                 onClick={() => setShowIndicators(false)}
-                                className="p-1 hover:bg-[#2a2e39] rounded text-[#787b86] hover:text-white"
+                                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -914,15 +1011,14 @@ export default function ChartPage() {
                                 onIndicatorAdd={handleAddIndicator}
                                 activeIndicators={activeIndicatorsList}
                                 onIndicatorRemove={handleRemoveIndicator}
+                                onIndicatorUpdate={handleUpdateIndicator}
                                 onIndicatorToggle={handleToggleIndicator}
                                 compact={false}
                             />
                         </div>
-
                     </div>
                 </div>
             )}
-
 
             {/* --- Main Content Area --- */}
             {/* --- Main Content Area --- */}

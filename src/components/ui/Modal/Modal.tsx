@@ -1,7 +1,4 @@
-
 // @ts-nocheck
-
-
 
 'use client';
 import React, { useEffect } from 'react';
@@ -59,20 +56,20 @@ export const Modal: React.FC<ModalProps> = ({
 
             {/* Modal */}
             <div
-                className={`relative w-full ${sizeClasses[size]} bg-white dark:bg-gray-800 rounded-xl shadow-xl max-h-[90vh] overflow-auto`}
+                className={`relative w-full ${sizeClasses[size]} bg-card rounded-xl shadow-xl max-h-[90vh] overflow-auto`}
             >
                 {/* Header */}
                 {(title || onClose) && (
-                    <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between p-6 border-b border-border">
                         {title && (
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                            <h2 className="text-xl font-semibold text-foreground">
                                 {title}
                             </h2>
                         )}
                         {onClose && (
                             <button
                                 onClick={onClose}
-                                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                className="p-1 text-muted-foreground hover:text-foreground"
                             >
                                 <X className="w-5 h-5" />
                             </button>

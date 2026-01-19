@@ -71,7 +71,7 @@ class AxiosClient {
                 // Cache successful GET responses
                 if (response.config.method?.toLowerCase() === 'get') {
                     const cacheKey = this.generateCacheKey(response.config)
-                    cacheService.setMemory(cacheKey, response.data, 60000) // 1 minute cache
+                    cacheService.setMemory(cacheKey, response.data, 90000) // 1 minute cache
                 }
 
                 return response

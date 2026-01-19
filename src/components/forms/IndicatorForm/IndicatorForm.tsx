@@ -175,15 +175,17 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
     ];
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+
+ 
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card text-card-foreground rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar animate-scale-in">
+                <div className="flex items-center justify-between p-6 border-b border-border">
+                    <h3 className="text-xl font-semibold">
                         {isEditMode ? 'تعديل المؤشر' : 'إضافة مؤشر فني'}
                     </h3>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                        className="p-2 hover:bg-accent rounded-lg transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -193,28 +195,28 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                     {/* اختيار المؤشر (في حالة الإضافة فقط) */}
                     {!isEditMode && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            <label className="block text-sm font-medium mb-3 text-foreground">
                                 اختر المؤشر
                             </label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto custom-scrollbar">
                                 {indicatorsLibrary.indicators.map((indicator) => (
                                     <button
                                         key={indicator.id}
                                         type="button"
                                         onClick={() => handleIndicatorSelect(indicator)}
-                                        className={`p-4 border rounded-lg text-left transition-colors ${selectedIndicator?.id === indicator.id
-                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900'
-                                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                        className={`p-4 border rounded-lg text-left transition-all bg-card hover:bg-accent/10 ${selectedIndicator?.id === indicator.id
+                                            ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                                            : 'border-border hover:border-primary/50'
                                             }`}
                                     >
-                                        <div className="font-medium text-gray-900 dark:text-white">
+                                        <div className="font-medium">
                                             {indicator.displayName}
                                         </div>
-                                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                        <div className="text-sm text-muted-foreground mt-1">
                                             {indicator.description}
                                         </div>
                                         <div className="flex items-center space-x-2 mt-2">
-                                            <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+                                            <span className="text-xs px-2 py-1 bg-muted rounded">
                                                 {indicator.category}
                                             </span>
                                             <span className={`text-xs px-2 py-1 rounded ${indicator.overlay
@@ -233,15 +235,15 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                     {selectedIndicator && (
                         <>
                             {/* معلومات المؤشر */}
-                            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                                <h4 className="font-medium text-gray-900 dark:text-white mb-3">تفاصيل المؤشر</h4>
+                            <div className="bg-card border border-border rounded-lg p-4">
+                                <h4 className="font-medium mb-3">تفاصيل المؤشر</h4>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">الاسم:</span>
+                                        <span className="text-sm text-muted-foreground">الاسم:</span>
                                         <p className="font-medium">{selectedIndicator.displayName}</p>
                                     </div>
                                     <div>
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">النوع:</span>
+                                        <span className="text-sm text-muted-foreground">النوع:</span>
                                         <p>
                                             {selectedIndicator.seriesType === 'line' ? 'خط' :
                                                 selectedIndicator.seriesType === 'histogram' ? 'عمودي' :
@@ -250,11 +252,11 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                                         </p>
                                     </div>
                                     <div>
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">المكان:</span>
+                                        <span className="text-sm text-muted-foreground">المكان:</span>
                                         <p>{selectedIndicator.overlay ? 'على الشارت الرئيسي' : 'لوحة مستقلة'}</p>
                                     </div>
                                     <div>
-                                        <span className="text-sm text-gray-600 dark:text-gray-400">الفئة:</span>
+                                        <span className="text-sm text-muted-foreground">الفئة:</span>
                                         <p>{selectedIndicator.category}</p>
                                     </div>
                                 </div>
@@ -262,7 +264,7 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
 
                             {/* اختيار اللون */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                <label className="block text-sm font-medium mb-3 text-foreground">
                                     اختر لون المؤشر
                                 </label>
                                 <div className="flex flex-wrap gap-3 mb-3">
@@ -271,8 +273,8 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                                             key={colorOption}
                                             type="button"
                                             onClick={() => setColor(colorOption)}
-                                            className={`w-10 h-10 rounded-lg border-4 ${color === colorOption ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-300'
-                                                } hover:scale-110 transition-transform`}
+                                            className={`w-10 h-10 rounded-lg border-4 transition-transform hover:scale-110 ${color === colorOption ? 'border-primary ring-2 ring-primary/50' : 'border-border'
+                                                }`}
                                             style={{ backgroundColor: colorOption }}
                                             title={colorOption}
                                         />
@@ -282,14 +284,14 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                                             type="color"
                                             value={color}
                                             onChange={(e) => setColor(e.target.value)}
-                                            className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer"
+                                            className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-card"
                                         />
-                                        <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 whitespace-nowrap">
+                                        <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-muted-foreground whitespace-nowrap">
                                             لون مخصص
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                <div className="text-sm text-muted-foreground">
                                     اللون المختار: <span style={{ color }} className="font-semibold">{color}</span>
                                 </div>
                             </div>
@@ -297,7 +299,7 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                             {/* سمك الخط (للمؤشرات الخطية فقط) */}
                             {(selectedIndicator.seriesType === 'line' || selectedIndicator.seriesType === 'area') && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium mb-2 text-foreground">
                                         سمك الخط
                                     </label>
                                     <div className="flex items-center space-x-4">
@@ -308,9 +310,9 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                                             step="0.5"
                                             value={lineWidth}
                                             onChange={(e) => setLineWidth(parseFloat(e.target.value))}
-                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
                                         />
-                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <span className="text-sm font-medium">
                                             {lineWidth}px
                                         </span>
                                     </div>
@@ -320,13 +322,13 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                             {/* إدخال المعلمات */}
                             <div>
                                 <div className="flex items-center justify-between mb-3">
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    <label className="block text-sm font-medium text-foreground">
                                         معلمات المؤشر
                                     </label>
                                     <button
                                         type="button"
                                         onClick={handleReset}
-                                        className="flex items-center space-x-2 text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+                                        className="flex items-center space-x-2 text-sm text-primary hover:text-primary/90 transition-colors"
                                     >
                                         <RefreshCw className="w-4 h-4" />
                                         <span>إعادة تعيين</span>
@@ -340,8 +342,8 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                             </div>
 
                             {/* معاينة المؤشر */}
-                            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-                                <h4 className="font-medium text-gray-900 dark:text-white mb-3">معاينة المؤشر</h4>
+                            <div className="bg-card border border-border rounded-lg p-4">
+                                <h4 className="font-medium mb-3">معاينة المؤشر</h4>
                                 <div className="space-y-3">
                                     <div className="flex items-center space-x-4">
                                         <div
@@ -353,14 +355,14 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                                         ></div>
                                         <div>
                                             <div className="font-medium">{selectedIndicator.displayName}</div>
-                                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                                            <div className="text-sm text-muted-foreground">
                                                 {selectedIndicator.description}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                         <div className="flex justify-between">
-                                            <span className="text-gray-600 dark:text-gray-400">النوع:</span>
+                                            <span className="text-muted-foreground">النوع:</span>
                                             <span className="font-medium">
                                                 {selectedIndicator.seriesType === 'line' ? 'خطي' :
                                                     selectedIndicator.seriesType === 'histogram' ? 'عمودي' :
@@ -368,15 +370,15 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-gray-600 dark:text-gray-400">الموقع:</span>
+                                            <span className="text-muted-foreground">الموقع:</span>
                                             <span className="font-medium">
                                                 {selectedIndicator.overlay ? 'على الشارت' : 'لوحة مستقلة'}
                                             </span>
                                         </div>
                                     </div>
                                     <div className="text-sm">
-                                        <div className="text-gray-600 dark:text-gray-400 mb-1">المعلمات:</div>
-                                        <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700">
+                                        <div className="text-muted-foreground mb-1">المعلمات:</div>
+                                        <div className="bg-background p-3 rounded border border-border custom-scrollbar">
                                             <pre className="text-xs overflow-x-auto">
                                                 {JSON.stringify(parameters, null, 2)}
                                             </pre>
@@ -388,18 +390,18 @@ export const IndicatorForm: React.FC<IndicatorFormProps> = ({
                     )}
 
                     {/* أزرار الإجراء */}
-                    <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex justify-end space-x-3 pt-6 border-t border-border">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            className="px-6 py-2.5 border border-border text-foreground rounded-lg hover:bg-accent transition-colors"
                         >
                             إلغاء
                         </button>
                         <button
                             type="submit"
                             disabled={!selectedIndicator}
-                            className="flex items-center space-x-2 px-6 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
                         >
                             <Save className="w-4 h-4" />
                             <span>{isEditMode ? 'حفظ التعديلات' : 'إضافة المؤشر'}</span>

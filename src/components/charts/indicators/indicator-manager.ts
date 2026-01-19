@@ -1,4 +1,4 @@
-// @ts-nocheck
+//  @ts-nocheck
 
 
 // indicators/indicator-manager.ts
@@ -79,80 +79,144 @@ export class IndicatorManager {
 
 
     // 🔥 الدالة الرئيسية الوحيدة التي تستدعي من useEffect
-    syncIndicators(indicators: Record<string, any>): void {
-        console.log(`📊 [IndicatorManager] Syncing ${Object.keys(indicators).length} indicators`);
+    // syncIndicators(indicators: Record<string, any>): void {
+    //     console.log(`📊 [IndicatorManager] Syncing ${Object.keys(indicators).length} indicators`);
 
 
-        console.log("📊 [IndicatorManager] Raw indicators received:", indicators);
-        Object.entries(indicators).forEach(([id, data]) => {
-            const indicator = this.indicators.get(id);
-            console.log(`[IndicatorManager] Processing ${id}:`, data);
+    //     console.log("📊 [IndicatorManager] Raw indicators received:", indicators);
+    //     Object.entries(indicators).forEach(([id, data]) => {
+    //         const indicator = this.indicators.get(id);
+    //         console.log(`[IndicatorManager] Processing ${id}:`, data);
            
           
 
-            if (indicator) {
-                // 🔥 تحديث المؤشر الموجود
-                console.log(`[Manager] 🔄 Updating ${id} with ${data.values?.length || 0} values`);
+    //         if (indicator) {
+    //             // 🔥 تحديث المؤشر الموجود
+    //             console.log(`[Manager] 🔄 Updating ${id} with ${data.values?.length || 0} values`);
 
-                // هل البيانات تحتوي على إشارة أنها من candle_close؟
+    //             // هل البيانات تحتوي على إشارة أنها من candle_close؟
+    //             const isCandleClose = data.source === 'candle_close' ||
+    //                 (data.values && data.values.length === 1);
+
+    //             if (isCandleClose) {
+    //                 // إغلاق شمعة → ندمج مع البيانات الحالية
+    //                 const currentData = indicator.getSeries()?.[0]?.data() || [];
+    //                 const lastPoint = currentData[currentData.length - 1];
+
+    //                 if (lastPoint && data.values[0] !== undefined) {
+    //                     // تحديث آخر نقطة بقيمة الإغلاق
+    //                     indicator.updateData({
+    //                         values: [data.values[0]],
+    //                         liveTime: Math.floor(lastPoint.time as number),
+    //                         metadata: data.metadata,
+    //                         signals: data.signals
+                            
+    //                     });
+    //                 }
+    //             } else {
+    //                 // بيانات كاملة أو إعادة تعيين
+    //                 indicator.updateData({
+    //                     values: data.values || [],
+    //                     metadata: data.metadata,
+    //                     signals: data.signals
+                        
+    //                 });
+    //             }
+    //         } else {
+    //             // 🔥 إنشاء مؤشر جديد
+    //             this.createAndAddIndicator(id, data);
+    //         }
+    //     });
+    //     const currentIds = Object.keys(indicators);
+    //     const existingIds = Array.from(this.indicators.keys());
+
+
+        
+    //     // 1. إزالة المؤشرات المحذوفة
+    //     this.removeDeletedIndicators(currentIds);
+
+    //     // 2. تحديث المؤشرات الموجودة
+    //     existingIds.forEach(id => {
+    //         if (indicators[id]) {
+    //             this.updateIndicator(id, indicators[id]);
+    //         }
+    //     });
+
+    //     // 3. إضافة المؤشرات الجديدة
+    //     currentIds.forEach(id => {
+    //         if (!this.indicators.has(id)) {
+    //             this.createAndAddIndicator(id, indicators[id]);
+    //         }
+    //     });
+
+    //     console.log(`✅ [IndicatorManager] Sync complete. Active indicators: ${this.indicators.size}`);
+    // }
+
+
+
+    // 🔥 استبدل دالة syncIndicators كاملة بهذا الكود
+    syncIndicators(indicators: Record<string, any>): void {
+        console.log(`📊 [IndicatorManager] Syncing ${Object.keys(indicators).length} indicators`);
+
+        // ---------------------------------------------------------
+        // الجزء الأول: تحديث المؤشرات الموجودة + إضافة الجديدة
+        // ---------------------------------------------------------
+        Object.entries(indicators).forEach(([id, data]) => {
+            const indicator = this.indicators.get(id);
+
+            if (indicator) {
+                // تحديث المؤشر الموجود
+                console.log(`[Manager] 🔄 Updating ${id}`);
+
+                // معالجة حالة Candle Close (تحديث نقطة واحدة)
                 const isCandleClose = data.source === 'candle_close' ||
                     (data.values && data.values.length === 1);
 
                 if (isCandleClose) {
-                    // إغلاق شمعة → ندمج مع البيانات الحالية
                     const currentData = indicator.getSeries()?.[0]?.data() || [];
                     const lastPoint = currentData[currentData.length - 1];
 
                     if (lastPoint && data.values[0] !== undefined) {
-                        // تحديث آخر نقطة بقيمة الإغلاق
                         indicator.updateData({
                             values: [data.values[0]],
                             liveTime: Math.floor(lastPoint.time as number),
                             metadata: data.metadata,
                             signals: data.signals
-                            
                         });
                     }
                 } else {
-                    // بيانات كاملة أو إعادة تعيين
+                    // تحديث كامل
                     indicator.updateData({
                         values: data.values || [],
                         metadata: data.metadata,
                         signals: data.signals
-                        
                     });
                 }
             } else {
-                // 🔥 إنشاء مؤشر جديد
+                // إنشاء مؤشر جديد
                 this.createAndAddIndicator(id, data);
             }
         });
-        const currentIds = Object.keys(indicators);
-        const existingIds = Array.from(this.indicators.keys());
 
-        // 1. إزالة المؤشرات المحذوفة
-        this.removeDeletedIndicators(currentIds);
+        // ---------------------------------------------------------
+        // الجزء الثاني: حذف المؤشرات التي تم إزالتها من القائمة
+        // ---------------------------------------------------------
+        const incomingIds = new Set(Object.keys(indicators));
+        const storedIndicatorIds = this.indicators.keys();
 
-        // 2. تحديث المؤشرات الموجودة
-        existingIds.forEach(id => {
-            if (indicators[id]) {
-                this.updateIndicator(id, indicators[id]);
-            }
-        });
-
-        // 3. إضافة المؤشرات الجديدة
-        currentIds.forEach(id => {
-            if (!this.indicators.has(id)) {
-                this.createAndAddIndicator(id, indicators[id]);
+        storedIndicatorIds.forEach(id => {
+            // هل هذا المؤشر موجود في الذاكرة موجود في القائمة الجديدة؟
+            if (!incomingIds.has(id)) {
+                // إذا لا، فهو تم حذفه -> قم بحذفه من الرسم
+                console.log(`🗑️ [IndicatorManager] Removing indicator: ${id}`);
+                this.removeIndicator(id);
             }
         });
 
         console.log(`✅ [IndicatorManager] Sync complete. Active indicators: ${this.indicators.size}`);
     }
 
-
-    // في indicator-manager.ts - أضف هذه الدوال
-
+ 
     private handleSMA(id: string, data: any): void {
         console.log(`[Manager] 📈 ========== HANDLE SMA START ==========`);
 

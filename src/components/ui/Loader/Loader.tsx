@@ -1,4 +1,3 @@
-
 import React from 'react';
 interface LoaderProps {
     size?: 'sm' | 'md' | 'lg';
@@ -39,7 +38,7 @@ export const Loader: React.FC<LoaderProps> = ({
                 />
             </svg>
             {text && (
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                <p className="mt-2 text-sm text-muted-foreground">
                     {text}
                 </p>
             )}

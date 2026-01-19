@@ -23,13 +23,13 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
         switch (param.type) {
             case 'number':
                 return (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                         <div className="flex justify-between">
-                            <label className="text-sm text-gray-600 dark:text-gray-400">
+                            <label className="text-sm font-medium text-foreground">
                                 {param.label}
                             </label>
                             {param.min !== undefined && param.max !== undefined && (
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                     {param.min} - {param.max}
                                 </span>
                             )}
@@ -42,14 +42,14 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
                                 min={param.min}
                                 max={param.max}
                                 step={param.step || 1}
-                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                className="flex-1 px-3 py-2 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                             />
                             {param.name === 'period' && (
-                                <span className="text-sm text-gray-500">يوم</span>
+                                <span className="text-sm text-muted-foreground">يوم</span>
                             )}
                         </div>
                         {param.description && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                                 {param.description}
                             </p>
                         )}
@@ -58,29 +58,29 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
 
             case 'text':
                 return (
-                    <div className="space-y-1">
-                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
                             {param.label}
                         </label>
                         <input
                             type="text"
                             value={value}
                             onChange={(e) => handleChange(param.name, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                     </div>
                 );
 
             case 'select':
                 return (
-                    <div className="space-y-1">
-                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
                             {param.label}
                         </label>
                         <select
                             value={value}
                             onChange={(e) => handleChange(param.name, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                         >
                             {param.options?.map((option) => (
                                 <option key={option.value} value={option.value}>
@@ -93,8 +93,8 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
 
             case 'color':
                 return (
-                    <div className="space-y-1">
-                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
                             {param.label}
                         </label>
                         <div className="flex items-center space-x-2">
@@ -102,13 +102,13 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
                                 type="color"
                                 value={value}
                                 onChange={(e) => handleChange(param.name, e.target.value)}
-                                className="w-10 h-10 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
+                                className="w-10 h-10 border border-border rounded-lg cursor-pointer bg-background"
                             />
                             <input
                                 type="text"
                                 value={value}
                                 onChange={(e) => handleChange(param.name, e.target.value)}
-                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                className="flex-1 px-3 py-2 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                             />
                         </div>
                     </div>
@@ -116,10 +116,17 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
 
             case 'boolean':
                 return (
-                    <div className="flex items-center justify-between">
-                        <label className="text-sm text-gray-600 dark:text-gray-400">
-                            {param.label}
-                        </label>
+                    <div className="flex items-center justify-between p-3 bg-card rounded-lg border border-border">
+                        <div>
+                            <label className="text-sm font-medium text-foreground block">
+                                {param.label}
+                            </label>
+                            {param.description && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {param.description}
+                                </p>
+                            )}
+                        </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input
                                 type="checkbox"
@@ -127,19 +134,19 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
                                 onChange={(e) => handleChange(param.name, e.target.checked)}
                                 className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            <div className="w-12 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-card after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-card after:border after:border-border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                         </label>
                     </div>
                 );
 
             case 'range':
                 return (
-                    <div className="space-y-2">
-                        <div className="flex justify-between">
-                            <label className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                            <label className="text-sm font-medium text-foreground">
                                 {param.label}
                             </label>
-                            <span className="text-sm font-medium">{value}</span>
+                            <span className="text-sm font-medium text-primary">{value}</span>
                         </div>
                         <input
                             type="range"
@@ -148,9 +155,9 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
                             min={param.min}
                             max={param.max}
                             step={param.step || 1}
-                            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
                         />
-                        <div className="flex justify-between text-xs text-gray-500">
+                        <div className="flex justify-between text-xs text-muted-foreground">
                             <span>{param.min}</span>
                             <span>{param.max}</span>
                         </div>
@@ -170,15 +177,15 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
         return (
             <div className="space-y-4">
                 {Object.entries(parameters).map(([key, value]) => (
-                    <div key={key} className="space-y-1">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <div key={key} className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
                             {key}
                         </label>
                         <input
                             type="number"
                             value={value}
                             onChange={(e) => handleChange(key, parseFloat(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                     </div>
                 ))}
@@ -187,9 +194,9 @@ export const ParameterInputs: React.FC<ParameterInputsProps> = ({
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             {parameterDefinitions.map((param: IndicatorParameter) => (
-                <div key={param.name} className="space-y-2">
+                <div key={param.name} className="space-y-3">
                     {renderInput(param, parameters[param.name] ?? param.defaultValue)}
                 </div>
             ))}

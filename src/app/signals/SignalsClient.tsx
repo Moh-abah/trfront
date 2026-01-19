@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 
 'use client';
 
@@ -40,7 +40,6 @@ import Alert from '@/components/ui/Alert/Alert';
 type SignalFilter = 'all' | 'buy' | 'sell' | 'active' | 'expired';
 type SignalStrength = 'all' | 'strong' | 'moderate' | 'weak';
 
-
 interface TradingSignal {
     id: string;
     symbol: string;
@@ -56,7 +55,6 @@ interface TradingSignal {
     read?: boolean;
     profitLoss?: number;
 }
-
 
 export default function SignalsClient() {
     const router = useRouter();
@@ -257,7 +255,6 @@ export default function SignalsClient() {
         });
     };
 
-
     // في الصفحة الرئيسية
     const convertTradingSignalsToTableSignals = (tradingSignals: TradingSignal[]): TableSignal[] => {
         return tradingSignals.map(signal => ({
@@ -278,9 +275,8 @@ export default function SignalsClient() {
     const filteredSignals = getFilteredSignals();
     const tableSignals = convertTradingSignalsToTableSignals(filteredSignals);
 
-
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-background">
             <div className="p-4 md:p-6">
                 {/* Error Alert */}
                 {error && (
@@ -297,16 +293,16 @@ export default function SignalsClient() {
                 <div className="mb-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                                 Trading Signals
                             </h1>
-                            <p className="text-gray-600 dark:text-gray-400 mt-1">
+                            <p className="text-muted-foreground mt-1">
                                 Real-time trading signals and alerts • {signalStats.total} total signals
                             </p>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <span>Updated {DateFormatter.formatRelative(lastUpdated)}</span>
                             </div>
 
@@ -333,49 +329,49 @@ export default function SignalsClient() {
 
                     {/* Stats Row */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <div className="p-3 bg-card border border-green-200 dark:border-green-800 rounded-lg">
                             <div className="flex items-center gap-2">
                                 <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
                                 <div className="text-sm text-green-700 dark:text-green-300">Buy Signals</div>
                             </div>
-                            <div className="text-lg font-semibold text-green-900 dark:text-green-200">
+                            <div className="text-lg font-semibold text-foreground">
                                 {signalStats.buy}
                             </div>
                         </div>
 
-                        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                        <div className="p-3 bg-card border border-red-200 dark:border-red-800 rounded-lg">
                             <div className="flex items-center gap-2">
                                 <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
                                 <div className="text-sm text-red-700 dark:text-red-300">Sell Signals</div>
                             </div>
-                            <div className="text-lg font-semibold text-red-900 dark:text-red-200">
+                            <div className="text-lg font-semibold text-foreground">
                                 {signalStats.sell}
                             </div>
                         </div>
 
-                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="p-3 bg-card border border-blue-200 dark:border-blue-800 rounded-lg">
                             <div className="flex items-center gap-2">
                                 <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                 <div className="text-sm text-blue-700 dark:text-blue-300">Active</div>
                             </div>
-                            <div className="text-lg font-semibold text-blue-900 dark:text-blue-200">
+                            <div className="text-lg font-semibold text-foreground">
                                 {signalStats.active}
                             </div>
                         </div>
 
-                        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                        <div className="p-3 bg-card border border-yellow-200 dark:border-yellow-800 rounded-lg">
                             <div className="flex items-center gap-2">
                                 <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
                                 <div className="text-sm text-yellow-700 dark:text-yellow-300">Win Rate</div>
                             </div>
-                            <div className="text-lg font-semibold text-yellow-900 dark:text-yellow-200">
+                            <div className="text-lg font-semibold text-foreground">
                                 {signalStats.winRate.toFixed(1)}%
                             </div>
                         </div>
                     </div>
 
                     {/* Filter Toolbar */}
-                    <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div className="mb-6 p-4 bg-card rounded-xl shadow-lg border border-border">
                         <div className="flex flex-col lg:flex-row gap-4">
                             {/* Left Section: Search and Filters */}
                             <div className="flex-1">
@@ -400,49 +396,85 @@ export default function SignalsClient() {
                                 </div>
 
                                 {/* Filter Tabs */}
+                                {/* Filter Tabs */}
                                 <div className="flex flex-wrap items-center gap-4 mt-4">
                                     {/* Signal Type Tabs */}
-                                    <Tabs
-                                        value={activeTab}
-                                        onChange={(value) => setActiveTab(value as SignalFilter)}
-                                        tabs={[
-                                            { value: 'all', label: 'All Signals' },
-                                            { value: 'buy', label: 'Buy', icon: <TrendingUp className="w-4 h-4" /> },
-                                            { value: 'sell', label: 'Sell', icon: <TrendingDown className="w-4 h-4" /> },
-                                            { value: 'active', label: 'Active' },
-                                            { value: 'expired', label: 'Expired' }
-                                        ]}
-                                    // size="sm"
-                                    />
+                                    <div className="flex items-center border border-border rounded-lg p-1 bg-card">
+                                        <Tabs
+                                            value={activeTab}
+                                            onChange={(value) => setActiveTab(value as SignalFilter)}
+                                            tabs={[
+                                                {
+                                                    value: 'all',
+                                                    label: 'All Signals',
+                                                    icon: <div className="w-2 h-2 rounded-full bg-muted-foreground" />
+                                                },
+                                                {
+                                                    value: 'buy',
+                                                    label: 'Buy',
+                                                    icon: <TrendingUp className="w-4 h-4 text-green-600" />
+                                                },
+                                                {
+                                                    value: 'sell',
+                                                    label: 'Sell',
+                                                    icon: <TrendingDown className="w-4 h-4 text-red-600" />
+                                                },
+                                                {
+                                                    value: 'active',
+                                                    label: 'Active',
+                                                    icon: <div className="w-2 h-2 rounded-full bg-primary" />
+                                                },
+                                                {
+                                                    value: 'expired',
+                                                    label: 'Expired',
+                                                    icon: <div className="w-2 h-2 rounded-full bg-muted-foreground" />
+                                                }
+                                            ]}
+                                        />
+                                    </div>
 
                                     {/* Strength Filter */}
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500 dark:text-gray-400">Strength:</span>
-                                        <select
-                                            value={strengthFilter}
-                                            onChange={(e) => setStrengthFilter(e.target.value as SignalStrength)}
-                                            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-                                        >
-                                            <option value="all">All</option>
-                                            <option value="strong">Strong</option>
-                                            <option value="moderate">Moderate</option>
-                                            <option value="weak">Weak</option>
-                                        </select>
+                                        <span className="text-sm text-muted-foreground font-medium">Strength:</span>
+                                        <div className="relative">
+                                            <select
+                                                value={strengthFilter}
+                                                onChange={(e) => setStrengthFilter(e.target.value as SignalStrength)}
+                                                className="px-3 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring pr-8 appearance-none cursor-pointer min-w-[120px] hover:border-input-hover transition-colors"
+                                            >
+                                                <option value="all" className="bg-background text-foreground">All Strengths</option>
+                                                <option value="strong" className="bg-background text-green-600">Strong</option>
+                                                <option value="moderate" className="bg-background text-yellow-600">Moderate</option>
+                                                <option value="weak" className="bg-background text-red-600">Weak</option>
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Time Filter */}
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500 dark:text-gray-400">Time:</span>
-                                        <select
-                                            value={timeFilter}
-                                            onChange={(e) => setTimeFilter(e.target.value as any)}
-                                            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-                                        >
-                                            <option value="1h">Last Hour</option>
-                                            <option value="24h">Last 24 Hours</option>
-                                            <option value="7d">Last 7 Days</option>
-                                            <option value="30d">Last 30 Days</option>
-                                        </select>
+                                        <span className="text-sm text-muted-foreground font-medium">Time:</span>
+                                        <div className="relative">
+                                            <select
+                                                value={timeFilter}
+                                                onChange={(e) => setTimeFilter(e.target.value as any)}
+                                                className="px-3 py-1.5 text-sm border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring pr-8 appearance-none cursor-pointer min-w-[140px] hover:border-input-hover transition-colors"
+                                            >
+                                                <option value="1h" className="bg-background text-foreground">Last Hour</option>
+                                                <option value="24h" className="bg-background text-foreground">Last 24 Hours</option>
+                                                <option value="7d" className="bg-background text-foreground">Last 7 Days</option>
+                                                <option value="30d" className="bg-background text-foreground">Last 30 Days</option>
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -471,11 +503,11 @@ export default function SignalsClient() {
 
                         {/* Active Filter Status */}
                         {(activeTab !== 'all' || strengthFilter !== 'all' || searchQuery) && (
-                            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <div className="mt-4 p-3 bg-primary/10 rounded-lg">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <Filter className="w-4 h-4 text-blue-500" />
-                                        <span className="text-sm text-blue-700 dark:text-blue-300">
+                                        <Filter className="w-4 h-4 text-primary" />
+                                        <span className="text-sm text-primary">
                                             Showing {filteredSignals.length} of {signals.length} signals
                                         </span>
                                     </div>
@@ -487,7 +519,7 @@ export default function SignalsClient() {
                                             setStrengthFilter('all');
                                             setSearchQuery('');
                                         }}
-                                        className="text-blue-600 dark:text-blue-400"
+                                        className="text-primary"
                                     >
                                         Clear Filters
                                     </Button>
@@ -498,13 +530,13 @@ export default function SignalsClient() {
                 </div>
 
                 {/* Main Table */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="bg-card rounded-xl shadow-lg border border-border overflow-hidden">
+                    <div className="p-4 border-b border-border">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            <h2 className="text-lg font-semibold text-foreground">
                                 Signal History
                             </h2>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                            <div className="text-sm text-muted-foreground">
                                 {activeSignals.length} active signals
                             </div>
                         </div>
@@ -517,17 +549,16 @@ export default function SignalsClient() {
                             </div>
                         ) : filteredSignals.length === 0 ? (
                             <div className="p-8 text-center">
-                                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                                <h3 className="font-medium text-gray-900 dark:text-white mb-1">
+                                <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                                <h3 className="font-medium text-foreground mb-1">
                                     No signals found
                                 </h3>
-                                <p className="text-gray-500 dark:text-gray-400">
+                                <p className="text-muted-foreground">
                                     {searchQuery ? 'Try adjusting your search or filters' : 'Generate signals to get started'}
                                 </p>
                             </div>
                         ) : (
                             <SignalsTable
-
                                 signals={tableSignals}
                                 onSignalClick={handleSignalClick}
                                 onArchive={archiveSignal}
@@ -588,7 +619,7 @@ export default function SignalsClient() {
             </Modal>
 
             {/* Alert Settings Modal */}
-            {/* <Modal
+            <Modal
                 isOpen={showAlertSettings}
                 onClose={() => setShowAlertSettings(false)}
                 title="Alert Settings"
@@ -599,7 +630,7 @@ export default function SignalsClient() {
                     onChange={updateNotificationSettings}
                     onClose={() => setShowAlertSettings(false)}
                 />
-            </Modal> */}
+            </Modal>
 
             {/* Signal Generator Modal */}
             <Modal

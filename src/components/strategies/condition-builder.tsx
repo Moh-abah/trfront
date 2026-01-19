@@ -377,8 +377,8 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
                       <div className="px-2 py-1 text-[10px] font-bold text-slate-500 uppercase">Indicators</div>
                       {/* Indicators List */}
                       {availableIndicators.map(ind => (
-                        <SelectItem key={ind.name} value={`indicator:${ind.name}`}>
-                          {ind.name}
+                        <SelectItem key={ind.id} value={`indicator:${ind.id}`}>
+                          {ind.id}
                         </SelectItem>
                       ))}
                       {/* Option to switch to Number Input */}
@@ -430,8 +430,8 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
                       <div className="px-2 py-1 text-[10px] font-bold text-slate-500 uppercase">Indicators</div>
                       {/* Indicators List */}
                       {availableIndicators.map(ind => (
-                        <SelectItem key={ind.name} value={`indicator:${ind.name}`}>
-                          {ind.name}
+                        <SelectItem key={ind.id} value={`indicator:${ind.id}`}>
+                          {ind.id}
                         </SelectItem>
                       ))}
                       <SelectItem value="number" className="text-slate-400 font-mono">[ Manual Number ]</SelectItem>

@@ -1,5 +1,5 @@
 // services/api/websocket.service.ts
-const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://62.169.17.101:8017/ws';
+const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://161.97.73.254:8017/ws';
 
 export class WebSocketService {
     private socket: WebSocket | null = null;

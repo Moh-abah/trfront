@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
         // Try to fetch from external API
         try {
-            const response = await fetch('http://62.169.17.101:8017/api/v1/stocks/stocks/symbols', {
+            const response = await fetch('http://161.97.73.254:8017/api/v1/stocks/stocks/symbols', {
                 headers: {
                     'accept': 'application/json',
                 },

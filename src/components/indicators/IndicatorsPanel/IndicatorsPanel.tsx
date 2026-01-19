@@ -1,5 +1,6 @@
+//@ts-nocheck
 
-// @ts-nocheck
+
 
 "use client"
 
@@ -18,9 +19,9 @@ interface IndicatorsPanelProps {
     chartId?: string
     onIndicatorAdd?: (indicator: ActiveIndicator) => void
     onIndicatorRemove?: (indicatorId: string) => void
-    onIndicatorUpdate?: (indicatorId: string, updates: Partial<ActiveIndicator>) => void
+    onIndicatorUpdate?: (name: string, params: any) => void
     onIndicatorsChange?: (indicators: ActiveIndicator[]) => void
-
+   
   
     activeIndicators: Array<{
         id: string
@@ -41,14 +42,18 @@ interface IndicatorsPanelProps {
 export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
     chartId = "default",
     onIndicatorAdd,
+    onIndicatorUpdate,
     onIndicatorRemove,
+
     onIndicatorToggle,
+    
     symbol = "",
     onIndicatorsChange,
     compact = false,
     activeIndicators, 
 }) => {
     const [isFormOpen, setIsFormOpen] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [selectedCategory, setSelectedCategory] = useState<string>("all")
     const [searchQuery, setSearchQuery] = useState("")
@@ -59,6 +64,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
     // وأزلنا activeIndicators, removeIndicator, updateIndicator من هنا
     const {
         addIndicator,
+        removeIndicator,
         favorites,
         toggleFavorite,
         saveConfig,
@@ -76,7 +82,6 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
 
     // 🔥 التعديل: استخدام الـ Prop مباشرة بدلاً من الـ Store
     const currentIndicators = activeIndicators
-
     const handleAddIndicator = async (indicatorConfig: any) => {
         try {
             if (!symbol) {
@@ -84,56 +89,145 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                 return;
             }
 
+            // ✅ 1. تعريف البيانات الأساسية المطلوبة للباك إند (مؤخراً عن شرط التعديل)
             const configToSend = {
-                id: indicatorConfig.id || `temp_${Date.now()}`,
                 name: indicatorConfig.name,
                 type: indicatorConfig.type,
                 params: indicatorConfig.params || {},
-                displayName: indicatorConfig.displayName || indicatorConfig.name,
-                color: indicatorConfig.color || "#2962FF",
-                seriesType: indicatorConfig.seriesType || "line",
-                overlay: indicatorConfig.overlay || false,
-                lineWidth: indicatorConfig.lineWidth || 2,
             };
 
-            // إرسال عبر WebSocket
-            chartWebSocketService.addIndicator(symbol, configToSend);
+            // ✅ 2. حالة التعديل (Edit)
+            if (isEditing) {
+                chartWebSocketService.updateIndicator(symbol, configToSend.name, configToSend.params);
 
-            // إضافة مؤقت (loading) للواجهة (نستخدم Store هنا فقط لإظهار اللودينج مؤقتاً)
-            const tempIndicator: ActiveIndicator = {
-                id: configToSend.id,
-                name: indicatorConfig.name,
-                displayName: indicatorConfig.displayName || indicatorConfig.name,
-                parameters: indicatorConfig.frontendParameters || indicatorConfig.params || {},
-                color: indicatorConfig.color || "#2962FF",
-                visible: true,
-                seriesType: indicatorConfig.seriesType || "line",
-                lineWidth: indicatorConfig.lineWidth || 2,
-                loading: true,
-                isTemp: true,
-            };
+                // إخبار الـ Page بأن التعديل تم (لتحديث الـ Store إذا لزم الأمر)
+                onIndicatorUpdate?.(configToSend.name, configToSend.params);
 
-            addIndicator(tempIndicator, chartId);
-            onIndicatorAdd?.(tempIndicator);
+                toast.success(`تم تعديل ${indicatorConfig.displayName || indicatorConfig.name}`);
+            }
+            // ✅ 3. حالة الإضافة الجديدة (Add)
+            else {
+                const fullConfig = {
+                    ...configToSend,
+                    id: indicatorConfig.id || `temp_${Date.now()}`,
+                    displayName: indicatorConfig.displayName || indicatorConfig.name,
+                    color: indicatorConfig.color || "#2962FF",
+                    seriesType: indicatorConfig.seriesType || "line",
+                    overlay: indicatorConfig.overlay || false,
+                    lineWidth: indicatorConfig.lineWidth || 2,
+                };
 
-            toast.success(`جاري إضافة ${indicatorConfig.displayName || indicatorConfig.name}`);
+                // إرسال عبر WebSocket
+                chartWebSocketService.addIndicator(symbol, fullConfig);
+
+                // إضافة مؤقت (loading) للواجهة
+                const tempIndicator: ActiveIndicator = {
+                    id: fullConfig.id,
+                    name: fullConfig.name,
+                    displayName: fullConfig.displayName,
+                    parameters: fullConfig.params,
+                    color: fullConfig.color,
+                    visible: true,
+                    seriesType: fullConfig.seriesType,
+                    lineWidth: fullConfig.lineWidth,
+                    loading: true,
+                    isTemp: true,
+                };
+
+                addIndicator(tempIndicator, chartId);
+                onIndicatorAdd?.(tempIndicator);
+
+                toast.success(`جاري إضافة ${fullConfig.displayName}`);
+            }
         } catch (error: any) {
             console.error("❌ Error in handleAddIndicator:", error);
-            toast.error(`فشل إضافة المؤشر: ${error.message}`);
+            toast.error(`فشلت العملية: ${error.message}`);
         }
     };
 
-    // 🔥 التعديل: تبسيط دالة الحذف لتعتمد فقط على الـ Prop
-    const handleRemoveIndicator = (indicatorId: string) => {
-        // لا نحتاج لتحديث الـ Store هنا لأن البيج سيتولى ذلك
-        // ولا نحتاج لإرسال WebSocket هنا إذا كان البيج سيتولاه
 
-        // نستدعي دالة الحذف من البيج
-        onIndicatorRemove?.(indicatorId);
 
-        toast.success("تم حذف المؤشر")
+    // ✅ إضافة دالة التعديل
+    // ✅ الدالة المصححة: دالة التعديل
+    const handleEditIndicator = (activeIndicator: any) => {
+        // 1. البحث عن التعريف الكامل للمؤشر في المكتبة (لجلب شكل الحقول)
+        const libraryIndicator = indicatorsLibrary.indicators.find(
+            (lib) => lib.name === activeIndicator.name || lib.id === activeIndicator.id
+        );
+
+        if (!libraryIndicator) {
+            console.error("لم يتم العثور على المؤشر في المكتبة:", activeIndicator.name);
+            toast.error("تعذر العثور على تعريف المؤشر");
+            return;
+        }
+
+        // 2. بناء كائن التعديل (نبدأ بالتعريف الكامل من المكتبة، ونعدل القيم فقط)
+        const editIndicator = {
+            ...libraryIndicator, // ✅ أهم سطر: ينسخ تعريف الحقول (parameters array) والفئة والنوع
+
+            id: activeIndicator.id,
+
+            // ⚠️ دمج القيم: الافتراضيات من المكتبة + القيم الحالية من المستخدم (تكتب فوق الافتراضيات)
+            defaultParameters: {
+                ...libraryIndicator.defaultParameters,
+                ...(activeIndicator.parameters || {})
+            },
+
+            // تحديث القيم المرئية (اللون والسمك) بناءً على القيم الحالية
+            defaultColor: activeIndicator.color || libraryIndicator.defaultColor,
+            defaultLineWidth: activeIndicator.lineWidth || libraryIndicator.defaultLineWidth,
+
+            // بناء backendConfig للإرسال الصحيح
+            backendConfig: {
+                ...libraryIndicator.backendConfig,
+                params: {
+                    ...libraryIndicator.backendConfig.params,
+                    ...(activeIndicator.parameters || {})
+                }
+            }
+        };
+
+        console.log("✅ Edit Indicator Prepared:", editIndicator);
+
+        setSelectedIndicator(editIndicator as Indicator);
+        setIsEditing(true);
+        setIsFormOpen(true);
+    };
+    const handleRemoveIndicator = async (indicatorId: string) => {
+        try {
+            if (!symbol) {
+                toast.error("الرمز غير محدد");
+                return;
+            }
+
+            // إيجاد المؤشر في القائمة النشطة للحصول على اسمه الحقيقي
+            const activeIndicator = currentIndicators.find(ind => ind.id === indicatorId);
+            if (!activeIndicator) {
+                toast.error("لم يتم العثور على المؤشر");
+                return;
+            }
+
+            // ✅ أولاً: إشعار الواجهة بحذف المؤشر (لإزالته من القائمة فوراً)
+            if (onIndicatorRemove) {
+                onIndicatorRemove(indicatorId);
+            } else {
+                // إذا لم يكن هناك callback، نحذف محلياً من الـ store
+                removeIndicator(indicatorId, chartId);
+            }
+
+            // ✅ ثانياً: إرسال طلب الحذف إلى الخادم
+            // ⚠️ **التعديل المهم هنا**: نستخدم activeIndicator.name وليس indicatorId
+            // لأن الباكيند يتوقع indicator_name (اسم المؤشر) وليس المعرف
+            chartWebSocketService.removeIndicator(symbol, activeIndicator.name);
+
+            // ✅ ثالثاً: عرض رسالة نجاح
+            toast.success(`تم حذف ${activeIndicator.displayName || activeIndicator.name}`);
+
+        } catch (error: any) {
+            console.error("❌ Error in handleRemoveIndicator:", error);
+            toast.error(`فشل حذف المؤشر: ${error.message}`);
+        }
     }
-
     // 🔥 التعديل: تمت إزالة handleUpdateIndicator لأننا سنستخدم onIndicatorToggle مباشرة في الزر
 
     const handleApplyPreset = (presetName: string) => {
@@ -170,45 +264,43 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
     }
 
     return (
-        <div
-            className={`flex flex-col h-full bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden`}
-        >
+        <div className={`flex flex-col h-full bg-background border border-border rounded-lg shadow-lg overflow-hidden`}>
             {/* رأس اللوحة */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+            <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
                 <div className="flex items-center space-x-3 rtl:space-x-reverse">
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-500 dark:text-gray-400 transition-colors"
+                        className="p-1.5 hover:bg-accent rounded-md text-muted-foreground transition-colors"
                     >
                         {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                     </button>
                     <div className="flex items-baseline gap-2">
-                        <h3 className="font-bold text-gray-900 dark:text-white text-sm">المؤشرات الفنية</h3>
-                        <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        <h3 className="font-bold text-foreground text-sm">المؤشرات الفنية</h3>
+                        <span className="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
                             {currentIndicators.length}
                         </span>
                     </div>
                 </div>
                 <div className="flex items-center space-x-1 rtl:space-x-reverse">
                     {!compact && (
-                        <div className="flex items-center border-l border-r border-gray-200 dark:border-gray-700 px-1 mx-1">
+                        <div className="flex items-center border-l border-r border-border px-1 mx-1">
                             <button
                                 onClick={handleSaveConfig}
-                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-500 dark:text-gray-400 transition-colors"
+                                className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors"
                                 title="حفظ الإعدادات"
                             >
                                 <Save className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={handleLoadConfig}
-                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-500 dark:text-gray-400 transition-colors"
+                                className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors"
                                 title="تحميل الإعدادات"
                             >
                                 <Download className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={handleExportConfig}
-                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-500 dark:text-gray-400 transition-colors"
+                                className="p-1.5 hover:bg-accent rounded-md text-muted-foreground hover:text-foreground transition-colors"
                                 title="تصدير الإعدادات"
                             >
                                 <Upload className="w-4 h-4" />
@@ -217,7 +309,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                     )}
                     <button
                         onClick={() => setIsFormOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md shadow-sm transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium rounded-md shadow-sm transition-colors"
                     >
                         <Plus className="w-3.5 h-3.5" />
                         {!compact && <span>إضافة مؤشر</span>}
@@ -238,9 +330,9 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                                     placeholder="بحث في المكتبة..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                                    className="w-full pl-9 pr-3 py-2 text-sm border border-input rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow"
                                 />
-                                <div className="absolute left-3 top-2.5 text-gray-400 pointer-events-none">
+                                <div className="absolute left-3 top-2.5 text-muted-foreground pointer-events-none">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                 </div>
                             </div>
@@ -248,8 +340,8 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                                 <button
                                     onClick={() => setSelectedCategory("all")}
                                     className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${selectedCategory === "all"
-                                        ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800"
-                                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                        ? "bg-primary/20 text-primary ring-1 ring-primary/30"
+                                        : "bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                         }`}
                                 >
                                     الكل
@@ -259,8 +351,8 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                                         key={category.id}
                                         onClick={() => setSelectedCategory(category.id)}
                                         className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${selectedCategory === category.id
-                                            ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800"
-                                            : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                            ? "bg-primary/20 text-primary ring-1 ring-primary/30"
+                                            : "bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                             }`}
                                     >
                                         <span className="ml-1">{category.icon}</span>
@@ -272,21 +364,21 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
 
                         {/* قائمة المؤشرات النشطة */}
                         <div className="space-y-3">
-                            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                 المؤشرات المفعلة
                             </h4>
                             {currentIndicators.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-10 text-center">
-                                    <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full mb-3">
-                                        <Settings className="w-6 h-6 text-gray-400" />
+                                    <div className="p-3 bg-card rounded-full mb-3">
+                                        <Settings className="w-6 h-6 text-muted-foreground" />
                                     </div>
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">لا توجد مؤشرات مفعلة</p>
-                                    <p className="text-xs text-gray-400 mt-1 max-w-[200px]">ابدأ بإضافة مؤشر من المكتبة لتحليل الرسم البياني</p>
+                                    <p className="text-sm font-medium text-muted-foreground">لا توجد مؤشرات مفعلة</p>
+                                    <p className="text-xs text-muted-foreground/70 mt-1 max-w-[200px]">ابدأ بإضافة مؤشر من المكتبة لتحليل الرسم البياني</p>
 
                                     {!compact && (
                                         <button
                                             onClick={() => setShowPresets(!showPresets)}
-                                            className="mt-4 flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                                            className="mt-4 flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 rounded-md transition-colors"
                                         >
                                             <Filter className="w-3.5 h-3.5" />
                                             تصفح الإعدادات المسبقة
@@ -298,9 +390,9 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                                     {currentIndicators.map((indicator) => (
                                         <div
                                             key={indicator.id}
-                                            className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${indicator.visible
-                                                ? 'bg-blue-50/30 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/50'
-                                                : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 opacity-70'
+                                            className={`group flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${indicator.visible
+                                                ? 'bg-primary/5 border-primary/30'
+                                                : 'bg-card/50 border-border opacity-70'
                                                 }`}
                                         >
                                             {/* المعلومات (الاسم + النوع + التحميل) */}
@@ -308,19 +400,19 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                                                 {/* نقطة ملونة */}
                                                 <div
                                                     className="w-2.5 h-2.5 rounded-full shrink-0"
-                                                    style={{ backgroundColor: indicator.color || '#2962FF' }}
+                                                    style={{ backgroundColor: indicator.color || 'var(--color-primary)' }}
                                                 />
 
                                                 <div className="min-w-0">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                                                        <span className="font-medium text-sm text-foreground truncate">
                                                             {indicator.displayName || indicator.name}
                                                         </span>
                                                         {indicator.loading && (
-                                                            <Loader2 className="w-3 h-3 text-blue-500 animate-spin shrink-0" />
+                                                            <Loader2 className="w-3 h-3 text-primary animate-spin shrink-0" />
                                                         )}
                                                     </div>
-                                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                                                    <div className="text-[10px] text-muted-foreground truncate">
                                                         {indicator.type} {indicator.parameters ? `(${JSON.stringify(indicator.parameters)})` : ''}
                                                     </div>
                                                 </div>
@@ -328,22 +420,31 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
 
                                             {/* أزرار التحكم */}
                                             <div className="flex items-center gap-1.5 shrink-0">
-                                                {/* 🔥 التعديل: زر التفعيل/الإلغاء يستخدم onIndicatorToggle مباشرة */}
+                                                {/* زر التفعيل/الإلغاء */}
                                                 <button
                                                     onClick={() => onIndicatorToggle?.(indicator.id, !indicator.visible)}
                                                     className={`p-1.5 rounded-md transition-colors ${indicator.visible
-                                                        ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50'
-                                                        : 'text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                                        ? 'text-primary bg-primary/10 hover:bg-primary/20'
+                                                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                                                         }`}
                                                     title={indicator.visible ? "إخفاء المؤشر" : "إظهار المؤشر"}
                                                 >
                                                     {indicator.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                                                 </button>
 
+                                                {/* زر التعديل */}
+                                                <button
+                                                    onClick={() => handleEditIndicator(indicator)}
+                                                    className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                                                    title="تعديل المؤشر"
+                                                >
+                                                    <Settings className="w-4 h-4" />
+                                                </button>
+
                                                 {/* زر الحذف */}
                                                 <button
                                                     onClick={() => handleRemoveIndicator(indicator.id)}
-                                                    className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                                                    className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                                                     title="حذف المؤشر"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -357,8 +458,8 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
 
                         {/* الإعدادات المسبقة */}
                         {showPresets && !compact && (
-                            <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700/50">
-                                <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <div className="space-y-3 pt-4 border-t border-border/50">
+                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                     الإعدادات المسبقة
                                 </h4>
                                 <div className="grid grid-cols-1 gap-2">
@@ -366,12 +467,12 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                                         <button
                                             key={name}
                                             onClick={() => handleApplyPreset(name)}
-                                            className="group p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 text-left transition-all"
+                                            className="group p-3 border border-border rounded-lg hover:border-primary hover:bg-primary/5 text-left transition-all bg-card"
                                         >
-                                            <div className="font-medium text-sm text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                            <div className="font-medium text-sm text-foreground group-hover:text-primary">
                                                 {name}
                                             </div>
-                                            <div className="text-[10px] text-gray-400 mt-0.5">
+                                            <div className="text-[10px] text-muted-foreground mt-0.5">
                                                 {preset.length} مؤشر مضمن
                                             </div>
                                         </button>
@@ -382,8 +483,8 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
 
                         {/* معاينة المؤشرات (المكتبة) */}
                         {!compact && filteredIndicators.length > 0 && (
-                            <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700/50">
-                                <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <div className="space-y-3 pt-4 border-t border-border/50">
+                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                     مكتبة المؤشرات
                                 </h4>
                                 <div className="space-y-2 pb-4">
@@ -411,10 +512,12 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                 <IndicatorForm
                     indicator={selectedIndicator}
                     onClose={() => {
+                        setIsEditing(false);
                         setIsFormOpen(false)
                         setSelectedIndicator(null)
                     }}
                     onSubmit={handleAddIndicator}
+                    isEditMode={isEditing}
                 />
             )}
         </div>

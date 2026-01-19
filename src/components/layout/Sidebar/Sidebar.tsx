@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import {
     Home,
@@ -15,7 +15,9 @@ import {
     HelpCircle,
     LogOut,
     Layers,
-    User
+    User,
+    Moon,    // <- added
+    Sun      // <- added
 } from 'lucide-react';
 import { NavItem } from './NavItem';
 import { useUIStore } from '../../../stores/ui.store';
@@ -31,27 +33,56 @@ const navigationItems = [
     { icon: Home, label: 'Dashboard', href: '/dashboard' },
     { icon: TrendingUp, label: 'Markets', href: '/markets' },
     { icon: Bell, label: 'Signals', href: '/signals' },
-    // { icon: BarChart3, label: 'Chart', href: '/chart' },
     { icon: PlayCircle, label: 'backtest', href: '/backtestadvancesd' },
     { icon: Layers, label: 'Strategies', href: '/strategies' },
-    // { icon: Star, label: 'Watchlist', href: '/watchlist' },
-    // { icon: Wallet, label: 'Portfolio', href: '/portfolio' },
-    // { icon: History, label: 'History', href: '/history' },
 ];
 
-// const secondaryItems = [
-
-//     { icon: Settings, label: 'Settings', href: '/settings' },
-// ];
-
 export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
-    const { sidebarOpen, sidebarCollapsed, toggleSidebarCollapsed } = useUIStore(); // أضف toggleSidebarCollapsed هنا
+    const { sidebarOpen, sidebarCollapsed, toggleSidebarCollapsed } = useUIStore();
     const router = useRouter();
+
+    const [isDark, setIsDark] = useState<boolean>(false);
+
+    // Initialize theme: saved -> use it; otherwise follow system preference
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark') {
+                document.documentElement.classList.add('dark');
+                setIsDark(true);
+            } else if (saved === 'light') {
+                document.documentElement.classList.remove('dark');
+                setIsDark(false);
+            } else {
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) {
+                    document.documentElement.classList.add('dark');
+                    setIsDark(true);
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    setIsDark(false);
+                }
+            }
+        } catch (e) {
+            // ignore (SSR safety)
+        }
+    }, []);
+
+    const toggleTheme = () => {
+        const newDark = !isDark;
+        setIsDark(newDark);
+        if (newDark) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    };
 
     if (!sidebarOpen) return null;
 
     const handleLogout = () => {
-        // Handle logout logic
         console.log('Logout clicked');
         router.push('/login');
     };
@@ -61,36 +92,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
             className={cn(
                 'fixed lg:static inset-y-0 left-0 z-40',
                 'bg-background dark:bg-background border-r border-border dark:border-border',
-                'transition-all duration-300 ease-in-out',
+                'transition-all duration-300 ease-in-out flex',
                 sidebarCollapsed ? 'w-[72px]' : 'w-auto',
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
                 className
             )}
         >
-
-            <div className="flex flex-col h-full">
-          
+            <div className="flex flex-col h-full w-full">
                 <div className="p-4 border-b border-border dark:border-border">
                     <div className="flex items-center justify-between overflow-hidden">
+                       
 
-                        {/* منطقة الشعار - تختفي أو تتقلص عند التصغير */}
-                        {!sidebarCollapsed && (
-                            <div className="flex items-center gap-2 animate-in fade-in duration-500">
-                                <Image
-                                    src="/logo2.png" // تأكد من مسار الصورة في مجلد public
-                                    alt="TECTONIC Logo"
-                                    width={120}
-                                    height={40}
-                                    priority
-                                    className="object-contain"
-                                />
-                            </div>
-                        )}
-
-                        {/* إذا كان السايدبار مغلقاً، يمكن إظهار نسخة مصغرة جداً أو إبقاء الزر فقط */}
                         {sidebarCollapsed && (
                             <div className="flex justify-center mb-0 transition-all">
-                                {/* اختيارياً: ضع هنا أيقونة المطرقة فقط إذا كانت لديك بشكل منفصل */}
+                                {/* مصغّر */}
                             </div>
                         )}
 
@@ -107,7 +122,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                         'space-y-1',
                         sidebarCollapsed ? 'px-1' : 'px-3'
                     )}>
-
                         {navigationItems.map((item) => (
                             <NavItem
                                 key={item.label}
@@ -118,17 +132,43 @@ export const Sidebar: React.FC<SidebarProps> = ({ className }) => {
                             />
                         ))}
                     </div>
-
                 </nav>
 
-                {/* User & Logout */}
-           
+                {/* Bottom area: theme toggle + logout */}
+                <div className={cn(
+                    'p-3 border-t border-border dark:border-border flex items-center justify-center',
+                    sidebarCollapsed ? 'px-1' : 'px-3'
+                )}>
+                    <div className="w-full flex items-center justify-between">
+                        {/* Theme toggle */}
+                        <button
+                            onClick={toggleTheme}
+                            title={isDark ? 'تبديل إلى الوضع الفاتح' : 'تبديل إلى الوضع الداكن'}
+                            aria-label="Toggle theme"
+                            className={cn(
+                                'flex items-center gap-2 rounded-lg transition-colors w-full',
+                                sidebarCollapsed ? 'justify-center p-2' : 'justify-start p-2'
+                            )}
+                        >
+                            <span className="flex items-center justify-center">
+                                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                            </span>
+                            {!sidebarCollapsed && (
+                                <span className="text-sm font-medium">
+                                    {isDark ? 'فاتح' : 'داكن'}
+                                </span>
+                            )}
+                        </button>
+
+                        
+                    </div>
+                </div>
             </div>
         </aside>
     );
 };
 
-// Helper Button component for Sidebar
+// Helper Button component (kept for other uses)
 const Button: React.FC<{
     variant?: 'ghost' | 'primary';
     size?: 'sm' | 'md';

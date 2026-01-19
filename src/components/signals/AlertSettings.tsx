@@ -1,7 +1,4 @@
-
 // @ts-nocheck
-
-
 
 'use client';
 
@@ -135,14 +132,14 @@ export const AlertSettings: React.FC<AlertSettingsProps> = ({
     return (
         <div className={className}>
             <div className="mb-6">
-                <h2 className="text-xl font-bold mb-2">Alert Settings</h2>
-                <p className="text-gray-500">Configure your trading alerts and notifications</p>
+                <h2 className="text-xl font-bold mb-2 text-foreground">Alert Settings</h2>
+                <p className="text-muted-foreground">Configure your trading alerts and notifications</p>
             </div>
 
             <div className="space-y-6">
                 {/* New Alert Form */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-medium mb-4">Create New Alert</h3>
+                <div className="bg-card p-4 rounded-lg border border-border">
+                    <h3 className="font-medium mb-4 text-foreground">Create New Alert</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <Input
@@ -194,7 +191,7 @@ export const AlertSettings: React.FC<AlertSettingsProps> = ({
                             />
                         </div>
 
-                        <Button onClick={handleAddAlert} icon={<Plus className="w-4 h-4" />}>
+                        <Button onClick={handleAddAlert} leftIcon={<Plus className="w-4 h-4" />}>
                             Add Alert
                         </Button>
                     </div>
@@ -202,15 +199,15 @@ export const AlertSettings: React.FC<AlertSettingsProps> = ({
 
                 {/* Alert Tabs */}
                 <div>
-                    <div className="border-b">
+                    <div className="border-b border-border">
                         <nav className="flex space-x-8">
                             {(['price', 'indicator', 'volume', 'pattern'] as const).map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
                                     className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${activeTab === tab
-                                            ? 'border-blue-500 text-blue-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-muted-foreground hover:text-foreground'
                                         }`}
                                 >
                                     {tab} Alerts ({getActiveAlerts().length})
@@ -222,8 +219,8 @@ export const AlertSettings: React.FC<AlertSettingsProps> = ({
                     {/* Alerts List */}
                     <div className="mt-4">
                         {getActiveAlerts().length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                <Bell className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                            <div className="text-center py-8 text-muted-foreground">
+                                <Bell className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
                                 <p>No {activeTab} alerts configured</p>
                             </div>
                         ) : (
@@ -231,7 +228,7 @@ export const AlertSettings: React.FC<AlertSettingsProps> = ({
                                 {getActiveAlerts().map((alert) => (
                                     <div
                                         key={alert.id}
-                                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                                        className="flex items-center justify-between p-3 bg-card rounded-lg border border-border"
                                     >
                                         <div className="flex items-center gap-4">
                                             <Switch
@@ -240,21 +237,21 @@ export const AlertSettings: React.FC<AlertSettingsProps> = ({
                                             />
 
                                             <div>
-                                                <div className="font-medium">{alert.symbol}</div>
-                                                <div className="text-sm text-gray-500">
+                                                <div className="font-medium text-foreground">{alert.symbol}</div>
+                                                <div className="text-sm text-muted-foreground">
                                                     {alert.type} {alert.condition} {alert.value}
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm text-gray-500">
+                                            <span className="text-sm text-muted-foreground">
                                                 {new Date(alert.createdAt).toLocaleDateString()}
                                             </span>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                icon={<Trash2 className="w-4 h-4" />}
+                                                leftIcon={<Trash2 className="w-4 h-4" />}
                                                 onClick={() => handleRemoveAlert(alert.id, alert.type)}
                                             />
                                         </div>
@@ -266,23 +263,23 @@ export const AlertSettings: React.FC<AlertSettingsProps> = ({
                 </div>
 
                 {/* Notification Settings */}
-                <div className="border-t pt-6">
-                    <h3 className="font-medium mb-4">Notification Settings</h3>
+                <div className="border-t border-border pt-6">
+                    <h3 className="font-medium mb-4 text-foreground">Notification Settings</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Switch label="Push Notifications" defaultChecked />
-                            <p className="text-sm text-gray-500">Receive notifications in browser</p>
+                            <p className="text-sm text-muted-foreground">Receive notifications in browser</p>
                         </div>
 
                         <div className="space-y-2">
                             <Switch label="Email Notifications" defaultChecked />
-                            <p className="text-sm text-gray-500">Receive alerts via email</p>
+                            <p className="text-sm text-muted-foreground">Receive alerts via email</p>
                         </div>
 
                         <div className="space-y-2">
                             <Switch label="Sound Alerts" defaultChecked />
-                            <p className="text-sm text-gray-500">Play sound for alerts</p>
+                            <p className="text-sm text-muted-foreground">Play sound for alerts</p>
                         </div>
                     </div>
                 </div>

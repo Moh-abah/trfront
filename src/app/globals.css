@@ -5,7 +5,7 @@
   --background: #dee5ea;
   --foreground: #011236;
   --radius: 0.625rem;
-  --card: oklch(1 0 0);
+  --card: oklch(85.763% 0.01917 243.146 / 0.422);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
@@ -34,42 +34,46 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(92.191% 0.0001 271.152);
   --sidebar-ring: oklch(0.708 0 0);
+
+  --header-bg: var(--background);
+  --header-muted: var(--muted);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #161d2cf7;
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(25.646% 0.03887 262.676);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(38.273% 0.07857 254.964 / 0.317);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(36.371% 0.10883 258.603 / 0.733);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(60.562% 0.19869 24.49);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
-  }
+.dark {
+  --background: #161d2cf7;
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(25.646% 0.03887 262.676);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(38.273% 0.07857 254.964 / 0.317);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(36.371% 0.10883 258.603 / 0.733);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(60.562% 0.19869 24.49);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+  --header-bg: #1e222d;
+  --header-muted: #2a2e39;
+ 
 }
 
 @theme inline {
@@ -303,7 +307,7 @@
 }
 
 .trading-input {
-  background: linear-gradient(180deg, var(--color-trading-bg-tertiary) 0%, rgba(10, 14, 20, 0.8) 100%);
+  background: linear-gradient(180deg, var(--color-trading-bg-tertiary) 0%, rgba(160, 162, 166, 0.8) 100%);
   border: 1px solid var(--color-trading-border);
   color: var(--color-trading-text-primary);
   border-radius: var(--radius-sm);
@@ -609,6 +613,32 @@
     border-width: 2px;
   }
 }
+.trading-range {
+  appearance: none;
+  background: linear-gradient(to right, var(--color-trading-accent) 0%, var(--color-muted) 100%);
+}
+
+.trading-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--color-card);
+  border: 2px solid var(--color-trading-accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(41, 98, 255, 0.4);
+}
+
+.trading-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--color-card);
+  border: 2px solid var(--color-trading-accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(41, 98, 255, 0.4);
+}
+
 
 /* Print Styles */
 @media print {

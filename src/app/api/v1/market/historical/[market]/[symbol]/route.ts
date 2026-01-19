@@ -52,7 +52,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HistoricalData } from '@/types/stocks';
 
-const BACKEND_URL = 'http://62.169.17.101:8017';
+const BACKEND_URL = 'http://161.97.73.254:8017';
 
 export async function GET(
     request: NextRequest,

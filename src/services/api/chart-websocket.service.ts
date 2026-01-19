@@ -1,5 +1,5 @@
-// const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://127.0.0.1:8000/ws"
-const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://62.169.17.101:8017/ws"
+const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://161.97.73.254:8017/ws"
+// const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://62.169.17.101:8017/ws"
 const ensureCandleContinuity = () => {
     // هذه الدالة تضمن استمرارية الشموع عند الاتصال
     console.log("[v0] 🔗 Ensuring candle continuity...")
@@ -24,6 +24,8 @@ class ChartWebSocketService {
             onPriceUpdate?: (data: any) => void
             onCandleClose?: (data: any) => void
             onIndicatorAdded?: (data: any) => void
+            onIndicatorUpdated?: (data: any) => void
+            onIndicatorRemoved?: (data: any) => void
             onConnected?: () => void
             onDisconnected?: () => void
             onError?: (error: any) => void
@@ -140,6 +142,19 @@ class ChartWebSocketService {
                         }
                         break
 
+
+                    // ✅ إضافة حالة التعديل (مفقودة)
+                    case "indicator_updated":
+                        console.log("[v0] ✏️ [WS] Indicator updated:", data);
+                        callbacks.onIndicatorUpdated?.(data);
+                        break;
+
+                    // ✅ إضافة حالة الحذف (مفقودة)
+                    case "indicator_removed":
+                        console.log("[v0] 🗑️ [WS] Indicator removed:", data);
+                        callbacks.onIndicatorRemoved?.(data);
+                        break;    
+
                     case "indicator_added":
                         console.log("[v0] ➕ [WS] Indicator added:", data.indicator_id);
 
@@ -222,13 +237,27 @@ class ChartWebSocketService {
         }
     }
 
-    removeIndicator(symbol: string, indicatorId: string) {
+    removeIndicator(symbol: string, indicatorName: string) {
         if (this.socket?.readyState === WebSocket.OPEN) {
             this.send({
                 action: "remove_indicator",
-                indicator_id: indicatorId,
+                indicator_name: indicatorName,
             });
-            console.log("[v0] 🗑️ [WS] Remove indicator sent:", indicatorId);
+            console.log("[v0] 🗑️ [WS] Remove indicator sent:", indicatorName);
+        }
+    }
+
+    // ✅ إضافة دالة updateIndicator بعد removeIndicator
+    updateIndicator(symbol: string, name: string, params: any) {
+        if (this.socket?.readyState === WebSocket.OPEN) {
+            this.send({
+                action: "update_indicator",
+                name: name,
+                params: params, // المعلمات الجديدة فقط
+            });
+            console.log("[v0] ✏️ [WS] Update indicator sent:", name, params);
+        } else {
+            console.warn("[v0] ⚠️ [WS] Cannot update, socket not open");
         }
     }
 

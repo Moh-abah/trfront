@@ -25,7 +25,7 @@ class MarketOverviewWebSocketService {
   private reconnectTimer: NodeJS.Timeout | null = null;
   private callbacks: MarketOverviewCallbacks = {};
   private isConnected: boolean = false;
-  private readonly WS_URL = "ws://62.169.17.101:8017/ws/market-overview";
+  private readonly WS_URL = "ws://161.97.73.254:8017/ws/market-overview";
   private readonly RECONNECT_DELAY = 3000; // 3 seconds
 
   connect(callbacks: MarketOverviewCallbacks) {

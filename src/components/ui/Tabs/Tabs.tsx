@@ -25,17 +25,6 @@ interface TabsProps {
     fullWidth?: boolean;
 }
 
-interface TabsProps {
-    children?: React.ReactNode;
-    defaultTab?: string;
-    className?: string;
-    value?: string; // للقيمة الحالية
-    onChange?: (value: string) => void; // للدالة عند التغيير
-    tabs?: TabItem[];
-    fullWidth?: boolean;
-
-}
-
 export const Tabs: React.FC<TabsProps> = ({
     children,
     defaultTab,
@@ -59,7 +48,6 @@ export const Tabs: React.FC<TabsProps> = ({
     );
 };
 
-
 interface TabListProps {
     children: React.ReactNode;
     className?: string;
@@ -67,7 +55,7 @@ interface TabListProps {
 
 export const TabList: React.FC<TabListProps> = ({ children, className = '' }) => {
     return (
-        <div className={`flex border-b border-gray-200 dark:border-gray-700 ${className}`}>
+        <div className={`flex border-b border-border ${className}`}>
             {children}
         </div>
     );
@@ -91,8 +79,8 @@ export const Tab: React.FC<TabProps> = ({ id, children, className = '' }) => {
             className={`
         px-4 py-2 font-medium text-sm border-b-2 transition-colors
         ${isActive
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }
         ${className}
       `}

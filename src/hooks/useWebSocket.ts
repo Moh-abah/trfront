@@ -26,7 +26,7 @@ let reconnectTimeout: NodeJS.Timeout | null = null
 
 export function useWebSocket(options: UseWebSocketOptions = {}) {
   const {
-    url = 'ws://62.169.17.101:8017/ws/market-overview',
+    url = 'ws://161.97.73.254:8017/ws/market-overview',
     onMessage,
     onOpen,
     onClose,

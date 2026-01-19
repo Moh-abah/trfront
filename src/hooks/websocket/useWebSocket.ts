@@ -16,7 +16,7 @@ interface WebSocketHookReturn {
     disconnect: () => void;
 }
 
-const WS_URL = 'ws://62.169.17.101:8017/ws/market-overview';
+const WS_URL = 'ws://161.97.73.254:8017/ws/market-overview';
 
 export const useWebSocket = ({
     onMessage,

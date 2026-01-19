@@ -30,25 +30,31 @@ export const IndicatorPreview: React.FC<IndicatorPreviewProps> = ({
     }
 
     return (
-        <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-            <div className="flex items-start space-x-3">
-                <div className="text-2xl mt-1">{getCategoryIcon(indicator.category)}</div>
+        <div className="flex items-center justify-between p-3 border border-border rounded-lg bg-card hover:bg-accent/10 transition-colors group">
+            <div className="flex items-start space-x-3 rtl:space-x-reverse">
+                <div className="text-2xl mt-1 text-foreground/70">
+                    {getCategoryIcon(indicator.category)}
+                </div>
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                        <h4 className="font-medium text-gray-900 dark:text-white truncate">{indicator.displayName}</h4>
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <h4 className="font-medium text-foreground truncate">
+                            {indicator.displayName}
+                        </h4>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation()
                                 onToggleFavorite()
                             }}
-                            className="text-gray-400 hover:text-yellow-500"
+                            className="p-1 rounded-md hover:bg-accent transition-colors"
                         >
-                            <Star className={`w-4 h-4 ${isFavorite ? "fill-yellow-500 text-yellow-500" : ""}`} />
+                            <Star className={`w-4 h-4 ${isFavorite ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground"}`} />
                         </button>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{indicator.description}</p>
-                    <div className="flex items-center space-x-2 mt-2">
-                        <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {indicator.description}
+                    </p>
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse mt-2">
+                        <span className="px-2 py-0.5 text-xs bg-card border border-border text-foreground rounded">
                             {indicator.seriesType === "line"
                                 ? "خط"
                                 : indicator.seriesType === "histogram"
@@ -57,16 +63,19 @@ export const IndicatorPreview: React.FC<IndicatorPreviewProps> = ({
                                         ? "منطقة"
                                         : "نطاق"}
                         </span>
-                        <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
+                        <span className={`px-2 py-0.5 text-xs rounded ${indicator.overlay
+                            ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300"
+                            : "bg-primary/20 text-primary"
+                            }`}>
                             {indicator.overlay ? "على السعر" : "لوحة منفصلة"}
                         </span>
                     </div>
                 </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 rtl:space-x-reverse">
                 <button
                     onClick={onSelect}
-                    className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    className="p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                     title="إضافة المؤشر"
                 >
                     <Plus className="w-4 h-4" />
@@ -75,7 +84,7 @@ export const IndicatorPreview: React.FC<IndicatorPreviewProps> = ({
                     onClick={() => {
                         /* سيتم إضافة نافذة معلومات */
                     }}
-                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
                     title="معلومات المؤشر"
                 >
                     <Info className="w-4 h-4" />

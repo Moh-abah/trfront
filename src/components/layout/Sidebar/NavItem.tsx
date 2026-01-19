@@ -11,7 +11,7 @@ interface NavItemProps {
     label: string;
     badge?: number;
     isActive?: boolean;
-    collapsed?: boolean; // أضفنا هذا
+    collapsed?: boolean;
     onClick?: () => void;
 }
 
@@ -21,7 +21,7 @@ export const NavItem: React.FC<NavItemProps> = ({
     label,
     badge,
     isActive,
-    collapsed = false, // قيمة افتراضية
+    collapsed = false,
     onClick,
 }) => {
     const pathname = usePathname();
@@ -32,20 +32,34 @@ export const NavItem: React.FC<NavItemProps> = ({
             <Link
                 href={href}
                 onClick={onClick}
-                className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${active
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                title={collapsed ? label : undefined} // إضافة tooltip للشريط الجانبي المطوي
+                className={`
+                    flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                    ${active
+                        ? 'bg-primary/10 text-primary dark:bg-primary/20 border-r-2 border-primary'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-gray-800/50'
+                    }
+                    ${collapsed ? 'justify-center px-3' : 'justify-start'}
+                `}
+                title={collapsed ? label : undefined}
             >
                 {Icon && (
-                    <Icon className={`w-5 h-5 ${collapsed ? '' : 'mr-3'} ${active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
+                    <Icon
+                        className={`
+                            w-5 h-5 transition-colors
+                            ${collapsed ? '' : 'mr-3'}
+                            ${active
+                                ? 'text-primary'
+                                : 'text-muted-foreground group-hover:text-accent-foreground'
+                            }
+                        `}
+                    />
                 )}
-                {!collapsed && ( // إخفاء النص إذا كان الشريط الجانبي مطوياً
+
+                {!collapsed && (
                     <>
-                        <span className="flex-1">{label}</span>
+                        <span className="flex-1 truncate">{label}</span>
                         {badge !== undefined && (
-                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400">
+                            <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-primary/20 text-primary dark:bg-primary/30">
                                 {badge}
                             </span>
                         )}

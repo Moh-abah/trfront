@@ -15,7 +15,6 @@ interface MarketOverviewDropdownProps {
     currentSymbol?: string;
 }
 
-
 // بعد الـ imports مباشرة، أضف:
 const DropdownSkeletonLoader = () => {
     const skeletonItems = Array.from({ length: 8 }, (_, i) => i);
@@ -24,26 +23,26 @@ const DropdownSkeletonLoader = () => {
         <div className="relative overflow-hidden">
             <div className="relative space-y-1">
                 {/* Header Skeleton */}
-                <div className="grid grid-cols-4 gap-4 px-4 py-2 border-b border-[#2a2e39]">
+                <div className="grid grid-cols-4 gap-4 px-4 py-2 border-b border-border">
                     {[...Array(4)].map((_, i) => (
                         <div key={i}>
-                            <div className="h-4 bg-[#2a2e39] rounded animate-pulse"></div>
+                            <div className="h-4 bg-muted rounded animate-pulse"></div>
                         </div>
                     ))}
                 </div>
 
                 {/* Rows Skeleton */}
                 {skeletonItems.map((i) => (
-                    <div key={i} className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-[#2a2e39]/50">
+                    <div key={i} className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-border/50">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-[#2a2e39] animate-pulse"></div>
+                            <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
                             <div className="space-y-2">
-                                <div className="h-4 w-20 bg-[#2a2e39] rounded animate-pulse"></div>
+                                <div className="h-4 w-20 bg-muted rounded animate-pulse"></div>
                             </div>
                         </div>
                         {[...Array(3)].map((_, j) => (
                             <div key={j} className="text-right">
-                                <div className="h-4 w-16 bg-[#2a2e39] rounded animate-pulse inline-block"></div>
+                                <div className="h-4 w-16 bg-muted rounded animate-pulse inline-block"></div>
                             </div>
                         ))}
                     </div>
@@ -123,7 +122,7 @@ export function MarketOverviewDropdown({
                 onMessage: (data: MarketData[]) => {
                     console.log("[MarketOverviewDropdown] Received market data:", data.length);
 
-           
+
                     const validMarkets = data.filter(market => isValidMarket(market.symbol));
 
                     console.log("[MarketOverviewDropdown] Filtered valid markets:", validMarkets.length);
@@ -190,48 +189,48 @@ export function MarketOverviewDropdown({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] bg-black/40 flex items-start justify-center pt-20">
-            <div className="w-[800px] max-h-[80vh] bg-[#1e222d] border border-[#2a2e39] rounded-lg shadow-2xl flex flex-col animate-scale-in">
+        <div className="fixed inset-0 z-[100] bg-black/60 flex items-start justify-center pt-20">
+            <div className="w-[800px] max-h-[80vh] bg-card border border-border rounded-lg shadow-2xl flex flex-col animate-scale-in backdrop-blur-sm">
                 {/* Header */}
-                <div className="h-14 flex items-center justify-between px-4 border-b border-[#2a2e39]">
+                <div className="h-14 flex items-center justify-between px-4 border-b border-border bg-card">
                     <div className="flex items-center gap-2">
-                        
-              
+
+
                     </div>
                     <button
                         onClick={onClose}
-                        className="px-3 py-1 text-sm bg-[#2a2e39] text-[#d1d4dc] rounded hover:bg-[#363a45] transition-colors"
+                        className="px-3 py-1 text-sm bg-secondary text-foreground rounded hover:bg-accent hover:text-accent-foreground transition-colors"
                     >
                         إغلاق
                     </button>
                 </div>
 
                 {/* Search and Filter Bar */}
-                <div className="p-4 border-b border-[#2a2e39] space-y-3">
+                <div className="p-4 border-b border-border bg-card space-y-3">
                     {/* Search Input */}
                     <div className="relative">
-                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#787b86]" />
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder="ابحث عن عملة..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pr-10 pl-4 py-2.5 bg-[#131722] border border-[#2a2e39] rounded text-[#d1d4dc] placeholder-[#787b86] focus:outline-none focus:border-[#2962ff] transition-colors"
+                            className="w-full pr-10 pl-4 py-2.5 bg-background border border-input rounded text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                             autoFocus
                         />
                     </div>
 
                     {/* Sort Controls */}
                     <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-xs text-[#787b86] font-medium">ترتيب حسب:</span>
+                        <span className="text-xs text-muted-foreground font-medium">ترتيب حسب:</span>
 
                         {/* Sort By Buttons */}
                         <div className="flex gap-1">
                             <button
                                 onClick={() => setSortBy("price")}
                                 className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${sortBy === "price"
-                                    ? "bg-[#2962ff] text-white"
-                                    : "bg-[#2a2e39] text-[#d1d4dc] hover:bg-[#363a45]"
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground"
                                     }`}
                             >
                                 السعر
@@ -239,8 +238,8 @@ export function MarketOverviewDropdown({
                             <button
                                 onClick={() => setSortBy("change24h")}
                                 className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${sortBy === "change24h"
-                                    ? "bg-[#2962ff] text-white"
-                                    : "bg-[#2a2e39] text-[#d1d4dc] hover:bg-[#363a45]"
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground"
                                     }`}
                             >
                                 التغير
@@ -248,8 +247,8 @@ export function MarketOverviewDropdown({
                             <button
                                 onClick={() => setSortBy("volume")}
                                 className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${sortBy === "volume"
-                                    ? "bg-[#2962ff] text-white"
-                                    : "bg-[#2a2e39] text-[#d1d4dc] hover:bg-[#363a45]"
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground"
                                     }`}
                             >
                                 الحجم
@@ -259,7 +258,7 @@ export function MarketOverviewDropdown({
                         {/* Sort Order Toggle */}
                         <button
                             onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-[#2a2e39] text-[#d1d4dc] hover:bg-[#363a45] transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                             title={sortOrder === "desc" ? "من الأكبر للأصغر" : "من الأصغر للأكبر"}
                         >
                             {sortOrder === "desc" ? (
@@ -272,26 +271,26 @@ export function MarketOverviewDropdown({
                     </div>
                 </div>
 
-            
+
                 {/* Loading State */}
-                { sortedMarkets.length === 0 && (
-                    <div className="flex-1 p-4">
+                {sortedMarkets.length === 0 && (
+                    <div className="flex-1 p-4 bg-card">
                         <DropdownSkeletonLoader />
                     </div>
                 )}
 
                 {/* Empty State */}
                 {!isLoading && sortedMarkets.length === 0 && (
-                    <div className="flex-1 flex items-center justify-center p-8">
-                        <p className="text-[#787b86] text-sm">لا توجد نتائج</p>
+                    <div className="flex-1 flex items-center justify-center p-8 bg-card">
+                        <p className="text-muted-foreground text-sm">لا توجد نتائج</p>
                     </div>
                 )}
 
                 {/* Markets List */}
                 {!isLoading && sortedMarkets.length > 0 && (
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto bg-card">
                         {/* Header Row */}
-                        <div className="sticky top-0 bg-[#1e222d] px-4 py-2 border-b border-[#2a2e39] grid grid-cols-4 gap-4 text-xs font-semibold text-[#787b86] uppercase tracking-wider">
+                        <div className="sticky top-0 bg-card px-4 py-2 border-b border-border grid grid-cols-4 gap-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider z-10">
                             <div>العملة</div>
                             <div className="text-right">السعر</div>
                             <div className="text-right">التغير 24س</div>
@@ -299,7 +298,7 @@ export function MarketOverviewDropdown({
                         </div>
 
                         {/* Market Items */}
-                        <div className="divide-y divide-[#2a2e39]">
+                        <div className="divide-y divide-border">
                             {sortedMarkets.map((market) => {
                                 const isPositive = market.change24h >= 0;
                                 const isSelected = market.symbol === currentSymbol;
@@ -308,12 +307,12 @@ export function MarketOverviewDropdown({
                                     <button
                                         key={market.symbol}
                                         onClick={() => handleMarketClick(market.symbol)}
-                                        className={`w-full px-4 py-3 grid grid-cols-4 gap-4 hover:bg-[#2a2e39] transition-colors ${isSelected ? "bg-[#2962ff]/10 border-l-2 border-l-[#2962ff]" : ""
+                                        className={`w-full px-4 py-3 grid grid-cols-4 gap-4 hover:bg-secondary/50 transition-colors ${isSelected ? "bg-accent/30 border-l-2 border-l-primary" : ""
                                             }`}
                                     >
                                         <div className="flex items-center gap-2">
                                             <span
-                                                className={`font-mono font-bold ${isSelected ? "text-[#2962ff]" : "text-white"
+                                                className={`font-mono font-bold ${isSelected ? "text-primary" : "text-foreground"
                                                     }`}
                                             >
                                                 {market.symbol}
@@ -321,13 +320,13 @@ export function MarketOverviewDropdown({
                                         </div>
 
                                         <div className="text-right">
-                                            <span className="font-mono text-white font-medium">
+                                            <span className="font-mono text-foreground font-medium">
                                                 {formatPrice(market.price)}
                                             </span>
                                         </div>
 
                                         <div
-                                            className={`flex items-center justify-end gap-1 text-right ${isPositive ? "text-[#089981]" : "text-[#f23645]"
+                                            className={`flex items-center justify-end gap-1 text-right ${isPositive ? "text-green-500 dark:text-[--color-trading-success]" : "text-red-500 dark:text-[--color-trading-error]"
                                                 }`}
                                         >
                                             {isPositive ? (
@@ -342,7 +341,7 @@ export function MarketOverviewDropdown({
                                         </div>
 
                                         <div className="text-right">
-                                            <span className="font-mono text-[#787b86] text-sm">
+                                            <span className="font-mono text-muted-foreground text-sm">
                                                 {formatVolume(market.volume)}
                                             </span>
                                         </div>

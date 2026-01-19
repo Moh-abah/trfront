@@ -310,7 +310,7 @@ export class StreamManager {
 
 // إنشاء نسخة عامة للمدير
 export const streamManager = new StreamManager({
-    url: process.env.NEXT_PUBLIC_WS_URL || 'ws://62.169.17.101:8017/ws',
+    url: process.env.NEXT_PUBLIC_WS_URL || 'ws://161.97.73.254:8017/ws',
     reconnectAttempts: 5,
     reconnectDelay: 1000,
     heartbeatInterval: 30000,
