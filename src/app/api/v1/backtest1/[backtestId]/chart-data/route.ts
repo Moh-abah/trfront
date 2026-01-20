@@ -1,8 +1,8 @@
 // trading-frontend\src\app\api\v1\backtest1\[backtestId]\chart-data\route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://161.97.73.254:8017';
-
+// const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://161.97.73.254:8017';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 export async function GET(
     request: NextRequest,

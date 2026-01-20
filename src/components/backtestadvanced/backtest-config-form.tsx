@@ -1,6 +1,6 @@
 
 
-// @ts-nocheck
+// // @ts-nocheck
 
 'use client';
 
@@ -82,44 +82,8 @@ export function BacktestConfigForm({ config, onConfigChange, onRunBacktest, isRu
         ...config,
         strategy_config: {
           ...config.strategy_config,
-          [key]: value
-        }
-      });
-    }
-  };
-
-  // تحديث إدارة المخاطر داخل الإستراتيجية
-  const updateRiskManagement = <K extends keyof RiskManagement>(key: K, value: RiskManagement[K] | undefined) => {
-    if (!config.strategy_config) {
-      const defaultStrategyConfig: Partial<StrategyConfig> = {
-        name: undefined,
-        version: undefined,
-        description: '',
-        base_timeframe: config.timeframe || undefined,
-        position_side: undefined,
-        indicators: [],
-        entry_rules: [],
-        exit_rules: [],
-        filter_rules: [],
-        risk_management: {
-          [key]: value
-        } as any
-      };
-
-      onConfigChange({
-        ...config,
-        strategy_config: defaultStrategyConfig
-      });
-    } else {
-      const currentRiskManagement = config.strategy_config.risk_management || {};
-      onConfigChange({
-        ...config,
-        strategy_config: {
-          ...config.strategy_config,
-          risk_management: {
-            ...currentRiskManagement,
-            [key]: value
-          }
+          [key]: value,
+          risk_management: undefined // تأكد من أنها دائماً undefined
         }
       });
     }
@@ -491,6 +455,45 @@ export function BacktestConfigForm({ config, onConfigChange, onRunBacktest, isRu
                 required
               />
             </div>
+
+
+            {/* Max Daily Loss */}
+            <div className="space-y-1.5">
+              <Label className="text-[9px] font-bold text-muted-foreground uppercase">Max Daily Loss %</Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  step={0.1}
+                  min={0}
+                  max={100}
+                  value={config.max_daily_loss_percent ?? ''}
+                  onChange={(e) => updateBacktestConfig('max_daily_loss_percent', e.target.value ? parseFloat(e.target.value) : undefined)}
+                  placeholder="مثال: 5"
+                  className="h-8 bg-muted border-border text-xs text-foreground font-mono focus:border-primary px-2 pr-6"
+                />
+                <span className="absolute right-2 top-2 text-[10px] text-muted-foreground pointer-events-none">%</span>
+              </div>
+            </div>
+          </div>
+
+
+ 
+          <div className="space-y-1.5">
+            <Label className="text-[9px] font-bold text-muted-foreground uppercase">Position Side *</Label>
+            <Select
+              value={config.strategy_config?.position_side || ''}
+              onValueChange={(v) => updateStrategyConfig('position_side', v as PositionSide)}
+              required
+            >
+              <SelectTrigger className="h-8 bg-muted border-border text-xs text-foreground focus:border-primary">
+                <SelectValue placeholder="اختر اتجاه المركز" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border text-xs">
+                <SelectItem value="long">Long Only</SelectItem>
+                <SelectItem value="short">Short Only</SelectItem>
+                <SelectItem value="both">Both</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Options */}
@@ -525,109 +528,7 @@ export function BacktestConfigForm({ config, onConfigChange, onRunBacktest, isRu
           </div>
         </div>
 
-        {/* 4. STRATEGY RISK (هذه داخل strategy_config) */}
-        <div className="space-y-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-2 pb-2">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Strategy Risk *</h3>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[9px] font-bold text-muted-foreground uppercase">Stop Loss % *</Label>
-              <div className="relative">
-                <Input
-                  type="number"
-                  step={0.1}
-                  min={0}
-                  value={config.strategy_config?.risk_management?.stop_loss_percentage ?? ''}
-                  onChange={(e) => updateRiskManagement('stop_loss_percentage', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="مثال: 2"
-                  className="h-8 bg-muted border-border text-xs text-foreground font-mono focus:border-primary px-2 pr-6"
-                  required
-                />
-                <span className="absolute right-2 top-2 text-[10px] text-muted-foreground pointer-events-none">%</span>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[9px] font-bold text-muted-foreground uppercase">Take Profit % *</Label>
-              <div className="relative">
-                <Input
-                  type="number"
-                  step={0.1}
-                  min={0}
-                  value={config.strategy_config?.risk_management?.take_profit_percentage ?? ''}
-                  onChange={(e) => updateRiskManagement('take_profit_percentage', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="مثال: 4"
-                  className="h-8 bg-muted border-border text-xs text-foreground font-mono focus:border-primary px-2 pr-6"
-                  required
-                />
-                <span className="absolute right-2 top-2 text-[10px] text-muted-foreground pointer-events-none">%</span>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[9px] font-bold text-muted-foreground uppercase">Max Position Size % *</Label>
-              <div className="flex items-center gap-2">
-                <Slider
-                  value={[config.strategy_config?.risk_management?.max_position_size ? config.strategy_config.risk_management.max_position_size * 100 : 0]}
-                  onValueChange={([v]) => updateRiskManagement('max_position_size', v / 100)}
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="flex-1"
-                />
-                <span className="text-[10px] font-mono w-8 text-right text-foreground">
-                  {((config.strategy_config?.risk_management?.max_position_size || 0) * 100).toFixed(0)}%
-                </span>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[9px] font-bold text-muted-foreground uppercase">Max Daily Loss % *</Label>
-              <div className="relative">
-                <Input
-                  type="number"
-                  step={0.1}
-                  min={0}
-                  value={config.strategy_config?.risk_management?.max_daily_loss ?? ''}
-                  onChange={(e) => updateRiskManagement('max_daily_loss', e.target.value ? parseFloat(e.target.value) : undefined)}
-                  placeholder="مثال: 5"
-                  className="h-8 bg-muted border-border text-xs text-foreground font-mono focus:border-primary px-2 pr-6"
-                  required
-                />
-                <span className="absolute right-2 top-2 text-[10px] text-muted-foreground pointer-events-none">%</span>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[9px] font-bold text-muted-foreground uppercase">Max Concurrent *</Label>
-              <Input
-                type="number"
-                min={1}
-                value={config.strategy_config?.risk_management?.max_concurrent_positions ?? ''}
-                onChange={(e) => updateRiskManagement('max_concurrent_positions', e.target.value ? parseInt(e.target.value) : undefined)}
-                placeholder="مثال: 3"
-                className="h-8 bg-muted border-border text-xs text-foreground font-mono focus:border-primary px-2"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[9px] font-bold text-muted-foreground uppercase">Position Side *</Label>
-              <Select
-                value={config.strategy_config?.position_side || ''}
-                onValueChange={(v) => updateStrategyConfig('position_side', v as PositionSide)}
-                required
-              >
-                <SelectTrigger className="h-8 bg-muted border-border text-xs text-foreground focus:border-primary">
-                  <SelectValue placeholder="اختر اتجاه المركز" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border text-xs">
-                  <SelectItem value="long">Long Only</SelectItem>
-                  <SelectItem value="short">Short Only</SelectItem>
-                  <SelectItem value="both">Both</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
+       
 
       </ScrollArea>
 
@@ -639,11 +540,6 @@ export function BacktestConfigForm({ config, onConfigChange, onRunBacktest, isRu
           !config.market || !config.initial_capital || !config.position_sizing ||
           !config.position_size_percent || config.position_size_percent <= 0 ||
           !config.max_positions || !config.commission_rate || !config.slippage_percent || !config.leverage ||
-          !config.strategy_config?.risk_management?.stop_loss_percentage ||
-          !config.strategy_config?.risk_management?.take_profit_percentage ||
-          !config.strategy_config?.risk_management?.max_position_size ||
-          !config.strategy_config?.risk_management?.max_daily_loss ||
-          !config.strategy_config?.risk_management?.max_concurrent_positions ||
           !config.strategy_config?.position_side) ? (
           <div className="flex items-center gap-2 p-2 rounded bg-destructive/10 border border-destructive/20">
             <AlertTriangle className="h-4 w-4 text-destructive" />

@@ -85,12 +85,12 @@ export interface FilterRule {
 }
 
 export interface RiskManagement {
-    stop_loss_percentage: number;
-    take_profit_percentage: number;
-    trailing_stop_percentage: number;
-    max_position_size: number;
-    max_daily_loss: number;
-    max_concurrent_positions: number;
+    stop_loss_percentage?: number;
+    take_profit_percentage?: number;
+    trailing_stop_percentage?: number;
+    max_position_size?: number;
+    max_daily_loss?: number;
+    max_concurrent_positions?: number;
 }
 
 export interface StrategyConfig {
@@ -104,7 +104,7 @@ export interface StrategyConfig {
     entry_rules: EntryRule[];
     exit_rules: ExitRule[];
     filter_rules: FilterRule[];
-    risk_management: RiskManagement;
+    risk_management?: RiskManagement;
 }
 
 export interface BacktestConfig {

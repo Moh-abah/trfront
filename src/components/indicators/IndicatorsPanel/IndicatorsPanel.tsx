@@ -109,7 +109,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
             else {
                 const fullConfig = {
                     ...configToSend,
-                    id: indicatorConfig.id || `temp_${Date.now()}`,
+                
                     displayName: indicatorConfig.displayName || indicatorConfig.name,
                     color: indicatorConfig.color || "#2962FF",
                     seriesType: indicatorConfig.seriesType || "line",
@@ -122,7 +122,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
 
                 // إضافة مؤقت (loading) للواجهة
                 const tempIndicator: ActiveIndicator = {
-                    id: fullConfig.id,
+                  
                     name: fullConfig.name,
                     displayName: fullConfig.displayName,
                     parameters: fullConfig.params,
@@ -152,7 +152,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
     const handleEditIndicator = (activeIndicator: any) => {
         // 1. البحث عن التعريف الكامل للمؤشر في المكتبة (لجلب شكل الحقول)
         const libraryIndicator = indicatorsLibrary.indicators.find(
-            (lib) => lib.name === activeIndicator.name || lib.id === activeIndicator.id
+            (lib) => lib.name === activeIndicator.name
         );
 
         if (!libraryIndicator) {
@@ -165,7 +165,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
         const editIndicator = {
             ...libraryIndicator, // ✅ أهم سطر: ينسخ تعريف الحقول (parameters array) والفئة والنوع
 
-            id: activeIndicator.id,
+            name: activeIndicator.name,
 
             // ⚠️ دمج القيم: الافتراضيات من المكتبة + القيم الحالية من المستخدم (تكتب فوق الافتراضيات)
             defaultParameters: {
@@ -193,7 +193,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
         setIsEditing(true);
         setIsFormOpen(true);
     };
-    const handleRemoveIndicator = async (indicatorId: string) => {
+    const handleRemoveIndicator = async (indicatorname: string) => {
         try {
             if (!symbol) {
                 toast.error("الرمز غير محدد");
@@ -201,7 +201,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
             }
 
             // إيجاد المؤشر في القائمة النشطة للحصول على اسمه الحقيقي
-            const activeIndicator = currentIndicators.find(ind => ind.id === indicatorId);
+            const activeIndicator = currentIndicators.find(ind => ind.name === indicatorname);
             if (!activeIndicator) {
                 toast.error("لم يتم العثور على المؤشر");
                 return;
@@ -209,10 +209,10 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
 
             // ✅ أولاً: إشعار الواجهة بحذف المؤشر (لإزالته من القائمة فوراً)
             if (onIndicatorRemove) {
-                onIndicatorRemove(indicatorId);
+                onIndicatorRemove(indicatorname);
             } else {
                 // إذا لم يكن هناك callback، نحذف محلياً من الـ store
-                removeIndicator(indicatorId, chartId);
+                removeIndicator(indicatorname, chartId);
             }
 
             // ✅ ثانياً: إرسال طلب الحذف إلى الخادم
@@ -389,7 +389,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                                 <div className="space-y-2">
                                     {currentIndicators.map((indicator) => (
                                         <div
-                                            key={indicator.id}
+                                            key={indicator.name}
                                             className={`group flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${indicator.visible
                                                 ? 'bg-primary/5 border-primary/30'
                                                 : 'bg-card/50 border-border opacity-70'
@@ -422,7 +422,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
                                             <div className="flex items-center gap-1.5 shrink-0">
                                                 {/* زر التفعيل/الإلغاء */}
                                                 <button
-                                                    onClick={() => onIndicatorToggle?.(indicator.id, !indicator.visible)}
+                                                    onClick={() => onIndicatorToggle?.(indicator.name, !indicator.visible)}
                                                     className={`p-1.5 rounded-md transition-colors ${indicator.visible
                                                         ? 'text-primary bg-primary/10 hover:bg-primary/20'
                                                         : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -443,7 +443,7 @@ export const IndicatorsPanel: React.FC<IndicatorsPanelProps> = ({
 
                                                 {/* زر الحذف */}
                                                 <button
-                                                    onClick={() => handleRemoveIndicator(indicator.id)}
+                                                    onClick={() => handleRemoveIndicator(indicator.name)}
                                                     className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                                                     title="حذف المؤشر"
                                                 >
