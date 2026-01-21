@@ -1,6 +1,6 @@
 
 // \src\app\backtestadvancesd\page.tsx
-// @ts-nocheck
+// //@ts-nocheck
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/uiadv/scroll-area';
 import { Separator } from '@/components/uiadv/separator';
 import { Badge } from '@/components/uiadv/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ChevronLeft, ChevronRight, BarChart3, Play, Save, Download, RefreshCw, Loader2, FileJson, CheckCircle2, AlertCircle, Settings, Cpu, Activity, LayoutDashboard, Layers, Zap, FolderTree, Terminal, Gauge, Brain, LineChart, Filter, Shield, Calendar, Coins, Target, FolderOpen, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BarChart3, Play, Save, Download, RefreshCw, Loader2, FileJson, CheckCircle2, AlertCircle, Settings, Cpu, Activity, LayoutDashboard, Layers, Zap, FolderTree, Terminal, Gauge, Brain, LineChart, Filter, Shield, Calendar, Coins, Target, FolderOpen, Trash2, X, History } from 'lucide-react';
 
 // استيراد المكونات
 import { IndicatorSelector } from '@/components/backtestadvanced/indicator-selector';
@@ -45,6 +45,19 @@ interface StrategyFromDB {
   created_at?: string;
   indicators_count?: number;
   entry_rules_count?: number;
+}
+
+interface SavedBacktest {
+  id: string;
+  name: string;
+  created_at: string;
+  summary_stats: {
+    total_pnl_percent: number;
+    win_rate: number;
+    total_trades: number;
+    timeframe: string;
+    symbol: string;
+  };
 }
 
 export function mapChartSummaryToBacktestSummary(
@@ -85,14 +98,14 @@ export function mapChartSummaryToBacktestSummary(
     execution_time_seconds: 0, // غير متوفر من API
     architecture_mode: 'chart-only',
 
-    // اختياري – نتركه undefined
-    recovery_factor: undefined,
-    ulcer_index: undefined,
-    avg_winning_trade: undefined,
-    avg_losing_trade: undefined,
-    largest_winning_trade: undefined,
-    largest_losing_trade: undefined,
-    avg_trade_duration_hours: undefined,
+
+    avg_winning_trade: (s as any).avg_winning_trade,
+    avg_losing_trade: (s as any).avg_losing_trade,
+    recovery_factor: (s as any).recovery_factor,
+    ulcer_index: (s as any).ulcer_index,
+    largest_winning_trade: (s as any).largest_winning_trade,
+    largest_losing_trade: (s as any).largest_losing_trade,
+    avg_trade_duration_hours: (s as any).avg_trade_duration_hours,
   };
 }
 
@@ -113,7 +126,18 @@ export default function StrategyBuilderPage() {
   // --- NEW STATES FOR LOADING STRATEGIES ---
   const [showLibraryPanel, setShowLibraryPanel] = useState(false);
   const [savedStrategies, setSavedStrategies] = useState<StrategyFromDB[]>([]);
+  const [advancedMetrics, setAdvancedMetrics] = useState<{
+    volatility_annual: number;
+    var_95: number;
+    cvar_95: number;
+    system_quality_number: number;
+    kelly_criterion: number;
+  } | null>(null);
 
+  const [savedBacktests, setSavedBacktests] = useState<SavedBacktest[]>([]);
+  const [libraryMode, setLibraryMode] = useState<'strategies' | 'backtests'>('strategies');
+  
+  const [configKey, setConfigKey] = useState(0); 
   // Initialize with default strategy config
   useEffect(() => {
     const today = new Date();
@@ -154,17 +178,24 @@ export default function StrategyBuilderPage() {
       strategy_config: defaultStrategyConfig,
       start_date: pastISO,
       end_date: todayISO
+
+      
     });
   }, []);
 
-  // --- NEW HANDLERS FOR LOADING STRATEGIES ---
+
 
   // Fetch list when library panel opens
   useEffect(() => {
     if (showLibraryPanel) {
-      fetchSavedStrategies();
+      if (libraryMode === 'strategies') {
+        fetchSavedStrategies();
+      } else {
+        fetchSavedBacktests();
+      }
     }
-  }, [showLibraryPanel]);
+  }, [showLibraryPanel, libraryMode]); // أضفنا libraryMode
+
 
   const fetchSavedStrategies = async () => {
     try {
@@ -254,6 +285,280 @@ export default function StrategyBuilderPage() {
     }
   };
 
+
+
+
+  const fetchSavedBacktests = async () => {
+    try {
+      const response = await fetch('/api/v1/backtest1/list?limit=20');
+      const data = await response.json();
+      if (data.success) {
+        setSavedBacktests(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading backtests list:', error);
+      toast({
+        variant: 'destructive',
+        title: 'خطأ',
+        description: 'فشل في جلب قائمة الباك تستات'
+      });
+    }
+  };
+
+
+
+  const handleLoadBacktest = async (backtestId: string) => {
+    try {
+      const response = await fetch(`/api/v1/backtest1/get/${backtestId}`);
+      if (!response.ok) throw new Error('Failed to fetch backtest details');
+
+      const data = await response.json();
+      if (!data.success) throw new Error('Invalid response');
+
+      const loadedConfig = data.config;
+      const visualCandles = data.chart_data?.visual_candles || [];
+      const tradePoints = data.chart_data?.trade_points || [];
+      const summary = data.summary || {};
+
+      // --- 1. فصل الإستراتيجية عن إعدادات الباكتست ---
+      // إنشاء نسخة عميقة من البيانات
+      const freshConfig = JSON.parse(JSON.stringify(loadedConfig));
+
+      // استخراج إعدادات الإستراتيجية من الكونفيغ
+      const strategyConfig = freshConfig.strategy_config || {
+        name: freshConfig.name || 'Loaded Strategy',
+        version: freshConfig.version || '1.0.0',
+        description: freshConfig.description || '',
+        base_timeframe: freshConfig.timeframe || '1h',
+        position_side: freshConfig.position_side || 'both',
+        indicators: freshConfig.indicators || [],
+        entry_rules: freshConfig.entry_rules || [],
+        exit_rules: freshConfig.exit_rules || [],
+        filter_rules: freshConfig.filter_rules || [],
+        risk_management: freshConfig.risk_management || {}
+      };
+
+      // تحديث backtestConfig بالبيانات الكاملة
+      const updatedBacktestConfig: BacktestConfig = {
+        // إعدادات الباكتست الأساسية
+        name: freshConfig.name || 'Loaded Backtest',
+        description: freshConfig.description || '',
+        mode: freshConfig.mode || 'standard',
+        start_date: freshConfig.start_date,
+        end_date: freshConfig.end_date,
+        timeframe: freshConfig.timeframe,
+        market: freshConfig.market,
+        symbols: freshConfig.symbols,
+
+        // الإستراتيجية الكاملة
+        strategy_config: strategyConfig,
+
+        // إعدادات مالية
+        initial_capital: freshConfig.initial_capital || 10000,
+        position_sizing: freshConfig.position_sizing || 'percentage',
+        position_size_percent: freshConfig.position_size_percent || 5,
+        max_positions: freshConfig.max_positions || 1,
+        commission_rate: freshConfig.commission_rate || 0.001,
+        slippage_percent: freshConfig.slippage_percent || 0.001,
+        stop_loss_percent: freshConfig.stop_loss_percent || 0,
+        take_profit_percent: freshConfig.take_profit_percent || 0,
+        trailing_stop_percent: freshConfig.trailing_stop_percent || 0,
+        max_daily_loss_percent: freshConfig.max_daily_loss_percent || 0,
+        enable_short_selling: freshConfig.enable_short_selling || false,
+        enable_margin: freshConfig.enable_margin || false,
+        leverage: freshConfig.leverage || 1,
+        require_confirmation: freshConfig.require_confirmation || false
+      };
+
+      // --- 2. تحديث الحالة مع الإستراتيجية الكاملة ---
+      setBacktestConfig((prev) => ({
+        ...prev,
+
+        name: freshConfig.name,
+        description: freshConfig.description,
+        mode: freshConfig.mode ,
+        start_date: freshConfig.start_date,
+        end_date: freshConfig.end_date,
+        timeframe: freshConfig.timeframe,
+        market: freshConfig.market,
+        symbols: freshConfig.symbols,
+        initial_capital: freshConfig.initial_capital,
+        position_sizing: freshConfig.position_sizing ,
+        position_size_percent: freshConfig.position_size_percent,
+        max_positions: freshConfig.max_positions ,
+        commission_rate: freshConfig.commission_rate ,
+        slippage_percent: freshConfig.slippage_percent,
+        stop_loss_percent: freshConfig.stop_loss_percent,
+        take_profit_percent: freshConfig.take_profit_percent,
+        trailing_stop_percent: freshConfig.trailing_stop_percent,
+        max_daily_loss_percent: freshConfig.max_daily_loss_percent,
+        enable_short_selling: freshConfig.enable_short_selling ,
+        enable_margin: freshConfig.enable_margin,
+        leverage: freshConfig.leverage,
+        require_confirmation: freshConfig.require_confirmation,
+        strategy_config: {
+          ...freshConfig.strategy_config,
+          indicators: freshConfig.strategy_config?.indicators || [],
+          entry_rules: freshConfig.strategy_config?.entry_rules || [],
+          exit_rules: freshConfig.strategy_config?.exit_rules || [],
+          filter_rules: freshConfig.strategy_config?.filter_rules || []
+        }
+      }));
+
+      // زيادة المفتاح لإجبار المكونات على إعادة البناء
+      setConfigKey((prev) => prev + 1);
+
+      // --- 3. تحديث بيانات الشارت (Chart Data) ---
+      if (visualCandles.length > 0) {
+        const processedCandles = visualCandles.map((candle: any) => {
+          const flatCandle = { ...candle };
+
+          if (flatCandle.indicators && typeof flatCandle.indicators === 'object') {
+            Object.keys(flatCandle.indicators).forEach(key => {
+              flatCandle[`ind_${key}`] = flatCandle.indicators[key];
+            });
+            delete flatCandle.indicators;
+          }
+
+          return flatCandle;
+        });
+
+        const availableIndicators = Object.keys(processedCandles[0])
+          .filter((key) => key.startsWith('ind_'))
+          .map((key) => key.replace('ind_', ''));
+
+        const equityCurve = processedCandles.map((c: any) => ({
+          value: c.account_balance,
+          timestamp: c.timestamp
+        }));
+
+        const drawdownCurve = processedCandles.map((c: any) => ({
+          value: c.current_pnl < 0 ? c.current_pnl : 0,
+          timestamp: c.timestamp
+        }));
+
+        const loadedChartData: ChartDataResponse = {
+          backtest_id: data.backtest_id,
+          metadata: {
+            name: data.name || freshConfig.name,
+            symbol: freshConfig.symbols?.[0] || 'Unknown',
+            timeframe: freshConfig.timeframe || '1h',
+            initial_capital: summary.initial_capital || freshConfig.initial_capital,
+            final_capital: summary.final_capital || freshConfig.initial_capital,
+            total_pnl: summary.total_pnl || 0,
+            total_pnl_percent: summary.total_pnl_percent || 0,
+            total_trades: summary.total_trades || 0,
+            win_rate: summary.win_rate || 0,
+            start_date: processedCandles[0]?.timestamp,
+            end_date: processedCandles[processedCandles.length - 1]?.timestamp
+          },
+          chart_data: {
+            candles: processedCandles,
+            trade_markers: tradePoints,
+            total_candles: processedCandles.length,
+            total_trades: tradePoints.length,
+            available_indicators: availableIndicators
+          },
+          summary: summary,
+          equity_curve: equityCurve,
+          drawdown_curve: drawdownCurve
+        };
+
+        setChartData(loadedChartData);
+      } else {
+        setChartData(null);
+      }
+
+      // --- 4. تحديث بيانات النتائج ---
+      const formattedTrades: Trade[] = tradePoints.map((tp: any) => ({
+        id: tp.trade_id,
+        symbol: freshConfig.symbols?.[0] || 'Unknown',
+        entry_time: tp.timestamp,
+        entry_price: tp.entry_price,
+        exit_time: tp.exit_reason ? tp.timestamp : undefined,
+        exit_price: tp.exit_price,
+        position_type: tp.position_type,
+        type: tp.position_type === 'long' ? 'buy' : 'sell',
+        pnl: tp.pnl,
+        pnl_percentage: tp.pnl_percentage,
+        exit_reason: tp.exit_reason
+      }));
+
+      const mockResponse: BacktestResponse = {
+        success: true,
+        backtest_id: data.backtest_id,
+        summary: summary,
+        advanced_metrics: (data as any).advanced_metrics || {},
+        trades: formattedTrades
+      };
+
+      setBacktestResponse(mockResponse);
+
+      if ((data as any).advanced_metrics) {
+        setAdvancedMetrics((data as any).advanced_metrics);
+      }
+
+
+      setTimeout(() => {
+        // دفع تحديث للمكونات
+        setBacktestConfig(prev => ({ ...prev }));
+      }, 100);
+
+      // --- 6. التحديثات النهائية ---
+      setActiveTab('results');
+      setShowLibraryPanel(false);
+
+      toast({
+        title: 'تم تحميل الباك تست بنجاح',
+        description: `تم استعادة الإعدادات والاستراتيجية والنتائج: ${updatedBacktestConfig.name}`
+      });
+
+
+
+    } catch (error) {
+      console.error('Error loading backtest:', error);
+      toast({
+        variant: 'destructive',
+        title: 'فشل التحميل',
+        description: error instanceof Error ? error.message : 'حدث خطأ غير متوقع'
+      });
+    }
+  };
+
+  
+  const handleDeleteBacktest = async (backtestId: string, backtestName: string) => {
+    if (!confirm(`هل أنت متأكد من حذف الباك-تست "${backtestName}"؟ لا يمكن التراجع عن هذا الإجراء.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/backtest1/delete/${backtestId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: 'تم الحذف',
+          description: `تم حذف الباك-تست: ${backtestName}`
+        });
+        // تحديث القائمة
+        fetchSavedBacktests();
+      } else {
+        throw new Error('Failed to delete');
+      }
+    } catch (error) {
+      console.error('Error deleting backtest:', error);
+      toast({
+        variant: 'destructive',
+        title: 'فشل الحذف',
+        description: 'حدث خطأ أثناء محاولة الحذف'
+      });
+    }
+  };
+  
+  
   // Handlers
   const handleIndicatorsChange = (indicators: IndicatorConfig[]) => {
     setBacktestConfig({
@@ -332,7 +637,8 @@ export default function StrategyBuilderPage() {
       { key: 'max_positions', label: 'المراكز المتزامنة' },
       { key: 'commission_rate', label: 'العمولة' },
       { key: 'slippage_percent', label: 'الانزلاق السعري' },
-      { key: 'leverage', label: 'الرافعة المالية' }
+      { key: 'leverage', label: 'الرافعة المالية' },
+
     ];
 
     essentialBacktestFields.forEach(({ key, label }) => {
@@ -455,7 +761,9 @@ export default function StrategyBuilderPage() {
       take_profit_percent: backtestConfig.take_profit_percent || 0,
       trailing_stop_percent: backtestConfig.trailing_stop_percent || 0,
       max_daily_loss_percent: backtestConfig.max_daily_loss_percent || 0,
-      
+
+
+      enable_short_selling: backtestConfig.enable_short_selling !== undefined ? backtestConfig.enable_short_selling : false,
       enable_margin: backtestConfig.enable_margin !== undefined ? backtestConfig.enable_margin : false,
       leverage: backtestConfig.leverage!,
       require_confirmation: backtestConfig.require_confirmation !== undefined ? backtestConfig.require_confirmation : false
@@ -471,12 +779,6 @@ export default function StrategyBuilderPage() {
       // تحليل الـ JSON للتأكد من صحته
       JSON.parse(payloadJson);
 
-      console.log('✅ JSON is valid');
-      console.log('📋 Payload to send:', payloadJson);
-      console.log('📊 Percentages converted:');
-      console.log('- position_size_percent:', backtestConfig.position_size_percent, '->', positionSizeDecimal);
-      console.log('- commission_rate:', backtestConfig.commission_rate, '->', commissionRateDecimal);
-      console.log('- slippage_percent:', backtestConfig.slippage_percent, '->', slippagePercentDecimal);
 
       // إرسال الـ payload
       setIsRunning(true);
@@ -497,8 +799,10 @@ export default function StrategyBuilderPage() {
         }
 
         const data: BacktestResponse = await response.json();
-        console.log('✅ Backtest response:', data);
 
+        setAdvancedMetrics(data.advanced_metrics);
+
+ 
         if (data.success && data.backtest_id) {
           setBacktestResponse(data);
           toast({
@@ -724,6 +1028,10 @@ export default function StrategyBuilderPage() {
                 symbol={chartData.metadata.symbol}
                 timeframe={chartData.metadata.timeframe}
                 summary={mapChartSummaryToBacktestSummary(chartData)}
+                
+    
+                advancedMetrics={advancedMetrics || undefined}
+                 
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -794,7 +1102,7 @@ export default function StrategyBuilderPage() {
       </main>
 
       {/* --- STRATEGY LIBRARY PANEL (NEW) --- */}
-      {showLibraryPanel && (
+      {/* {showLibraryPanel && (
         <div className="fixed right-0 top-11 bottom-0 w-80 sm:w-96 bg-card border-l border-border shadow-2xl z-40 flex flex-col animate-in slide-in-from-right duration-200 ease-out">
           <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
             <span className="text-xs font-bold text-foreground uppercase tracking-widest">Strategy Library</span>
@@ -866,7 +1174,193 @@ export default function StrategyBuilderPage() {
             </div>
           </ScrollArea>
         </div>
+      )} */}
+
+
+
+
+
+
+      {/* --- STRATEGY LIBRARY PANEL (UPDATED) --- */}
+      {showLibraryPanel && (
+        <div className="fixed right-0 top-11 bottom-0 w-80 sm:w-96 bg-card border-l border-border shadow-2xl z-40 flex flex-col animate-in slide-in-from-right duration-200 ease-out">
+          <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
+            <span className="text-xs font-bold text-foreground uppercase tracking-widest">Library</span>
+            <button
+              onClick={() => setShowLibraryPanel(false)}
+              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Tabs Header */}
+          <div className="flex border-b border-border">
+            <button
+              onClick={() => setLibraryMode('strategies')}
+              className={`flex-1 py-2 text-xs font-medium ${libraryMode === 'strategies' ? 'bg-muted text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              Strategies
+            </button>
+            <button
+              onClick={() => setLibraryMode('backtests')}
+              className={`flex-1 py-2 text-xs font-medium flex items-center justify-center gap-1.5 ${libraryMode === 'backtests' ? 'bg-muted text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <History className="h-3 w-3" />
+              Backtests
+            </button>
+          </div>
+
+          <ScrollArea className="flex-1 custom-scrollbar">
+            <div className="p-3 space-y-2">
+
+              {/* STRATEGIES LIST */}
+              {libraryMode === 'strategies' && (
+                <>
+                  {savedStrategies.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                      <FolderOpen className="h-8 w-8 mb-2 opacity-50" />
+                      <div className="text-xs font-mono uppercase">No strategies found</div>
+                    </div>
+                  ) : (
+                    savedStrategies.map((strategy) => (
+                      <div
+                        key={strategy.id}
+                        className="group p-3 bg-background border border-border hover:border-primary rounded-sm transition-all cursor-pointer relative"
+                      >
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="flex-1 pr-2 min-w-0">
+                            <div className="text-[11px] font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                              {strategy.name}
+                            </div>
+                            <div className="text-[9px] text-muted-foreground font-mono mt-0.5">
+                              {new Date(strategy.created_at || Date.now()).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-[10px] text-muted-foreground line-clamp-2 mb-3 h-8 leading-tight">
+                          {strategy.description || 'No description provided.'}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-border">
+                          <div className="flex gap-2 flex-wrap">
+                            <span className="text-[9px] bg-card px-1.5 py-0.5 rounded text-muted-foreground border border-border">
+                              {strategy.indicators_count || 0} Ind
+                            </span>
+                            <span className="text-[9px] bg-card px-1.5 py-0.5 rounded text-muted-foreground border border-border">
+                              {strategy.entry_rules_count || 0} Rules
+                            </span>
+                          </div>
+
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleLoadStrategy(strategy.name)}
+                              className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-sm transition-colors"
+                              title="Load Strategy"
+                            >
+                              <Download className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStrategy(strategy.name)}
+                              className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-sm transition-colors"
+                              title="Delete Strategy"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </>
+              )}
+
+              {/* BACKTESTS LIST */}
+              {libraryMode === 'backtests' && (
+                <>
+                  {savedBacktests.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                      <History className="h-8 w-8 mb-2 opacity-50" />
+                      <div className="text-xs font-mono uppercase">No backtests found</div>
+                    </div>
+                  ) : (
+                    savedBacktests.map((bt) => (
+                      <div
+                        key={bt.id}
+                        className="group p-3 bg-background border border-border hover:border-primary rounded-sm transition-all cursor-pointer relative"
+                      >
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="flex-1 pr-2 min-w-0">
+                            <div className="text-[11px] font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                              {bt.name}
+                            </div>
+                            <div className="text-[9px] text-muted-foreground font-mono mt-0.5">
+                              {new Date(bt.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mb-3 text-[10px]">
+                          <div className="bg-card p-1.5 rounded border border-border text-center">
+                            <div className="text-muted-foreground">PnL</div>
+                            <div className={`font-bold ${bt.summary_stats.total_pnl_percent >= 0 ? 'text-success' : 'text-destructive'}`}>
+                              {bt.summary_stats.total_pnl_percent.toFixed(1)}%
+                            </div>
+                          </div>
+                          <div className="bg-card p-1.5 rounded border border-border text-center">
+                            <div className="text-muted-foreground">Win Rate</div>
+                            <div className="font-bold text-foreground">
+                              {bt.summary_stats.win_rate.toFixed(0)}%
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-border">
+                          <div className="flex gap-2 flex-wrap">
+                            <span className="text-[9px] bg-card px-1.5 py-0.5 rounded text-muted-foreground border border-border">
+                              {bt.summary_stats.symbol}
+                            </span>
+                            <span className="text-[9px] bg-card px-1.5 py-0.5 rounded text-muted-foreground border border-border">
+                              {bt.summary_stats.timeframe}
+                            </span>
+                          </div>
+
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleLoadBacktest(bt.id)}
+                              className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-sm transition-colors"
+                              title="Load Backtest"
+                            >
+                              <Download className="h-3 w-3" />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteBacktest(bt.id, bt.name)}
+                              className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-sm transition-colors"
+                              title="Delete Backtest"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+
+
+
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </>
+              )}
+
+            </div>
+          </ScrollArea>
+        </div>
       )}
+
+
+
+
 
       {/* 2. زر عائم لفتح اللوحة */}
       <div className="fixed right-4 bottom-16 z-50">
@@ -1099,6 +1593,7 @@ export default function StrategyBuilderPage() {
               </div>
               <div className="max-h-[500px] overflow-y-auto p-4">
                 <IndicatorSelector
+                  key={configKey}
                   selectedIndicators={backtestConfig.strategy_config?.indicators || []}
                   onIndicatorsChange={handleIndicatorsChange}
                   timeframe={backtestConfig.timeframe || '1h'}
@@ -1132,6 +1627,7 @@ export default function StrategyBuilderPage() {
               </div>
               <div className="max-h-[500px] overflow-y-auto p-4">
                 <RuleBuilder
+                  key={configKey}
                   entryRules={backtestConfig.strategy_config?.entry_rules || []}
                   exitRules={backtestConfig.strategy_config?.exit_rules || []}
                   filterRules={backtestConfig.strategy_config?.filter_rules || []}
@@ -1165,6 +1661,7 @@ export default function StrategyBuilderPage() {
               </div>
               <div className="max-h-[500px] overflow-y-auto p-4">
                 <BacktestConfigForm
+                  key={configKey}
                   config={backtestConfig}
                   onConfigChange={handleConfigChange}
                   onRunBacktest={handleRunBacktest}

@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/uiadv/button';
 import { Input } from '@/components/uiadv/input';
 import { Label } from '@/components/uiadv/label';
@@ -476,6 +476,35 @@ export function BacktestConfigForm({ config, onConfigChange, onRunBacktest, isRu
             </div>
           </div>
 
+          {/* Enable Short Selling */}
+          <div className="space-y-1.5 col-span-2">
+            <div className="flex items-center gap-2 p-3 bg-card border border-border rounded-sm">
+              <Checkbox
+                id="enable_short_selling"
+                checked={config.enable_short_selling || false}
+                onCheckedChange={(c) => updateBacktestConfig('enable_short_selling', !!c)}
+                className="border-border"
+              />
+              <div className="flex-1">
+                <Label
+                  htmlFor="enable_short_selling"
+                  className="text-xs font-medium text-foreground cursor-pointer"
+                >
+                  Enable Short Selling
+                </Label>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Allow the strategy to open short (sell) positions
+                </p>
+              </div>
+              <Badge
+                variant={config.enable_short_selling ? "default" : "secondary"}
+                className="text-[10px]"
+              >
+                {config.enable_short_selling ? "ON" : "OFF"}
+              </Badge>
+            </div>
+          </div>
+
 
  
           <div className="space-y-1.5">
@@ -496,36 +525,7 @@ export function BacktestConfigForm({ config, onConfigChange, onRunBacktest, isRu
             </Select>
           </div>
 
-          {/* Options */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="flex items-center gap-2 p-2 bg-card border border-border rounded-sm">
-              <Checkbox
-                id="short"
-                checked={config.enable_short_selling || false}
-                onCheckedChange={(c) => updateBacktestConfig('enable_short_selling', !!c)}
-                className="border-border"
-              />
-              <Label htmlFor="short" className="text-[10px] text-foreground cursor-pointer">Short</Label>
-            </div>
-            <div className="flex items-center gap-2 p-2 bg-card border border-border rounded-sm">
-              <Checkbox
-                id="margin"
-                checked={config.enable_margin || false}
-                onCheckedChange={(c) => updateBacktestConfig('enable_margin', !!c)}
-                className="border-border"
-              />
-              <Label htmlFor="margin" className="text-[10px] text-foreground cursor-pointer">Margin</Label>
-            </div>
-            <div className="flex items-center gap-2 p-2 bg-card border border-border rounded-sm">
-              <Checkbox
-                id="conf"
-                checked={config.require_confirmation || false}
-                onCheckedChange={(c) => updateBacktestConfig('require_confirmation', !!c)}
-                className="border-border"
-              />
-              <Label htmlFor="conf" className="text-[10px] text-foreground cursor-pointer">Confirm</Label>
-            </div>
-          </div>
+          
         </div>
 
        
