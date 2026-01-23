@@ -1,6 +1,6 @@
 
 
-// @ts-nocheck
+//@ts-nocheck
 
 
 
@@ -8,13 +8,13 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/uiadv/button';
 import { Input } from '@/components/uiadv/input';
 import { Label } from '@/components/uiadv/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/uiadv/select';
 import { Separator } from '@/components/uiadv/separator';
-import { Trash2, Plus, ArrowUpRight, ArrowDownRight, Minus, X, GitBranch, CheckCircle2 } from 'lucide-react';
+import { Trash2, Plus, ArrowUpRight, ArrowDownRight, Minus, X, GitBranch, CheckCircle2, Target } from 'lucide-react';
 import { Condition, CompositeCondition, ConditionType, Operator, IndicatorConfig } from '@/types/backtest';
 
 interface ConditionBuilderProps {
@@ -42,9 +42,14 @@ const OPERATORS: { value: Operator; label: string; icon?: React.ReactNode }[] = 
   { value: '!=', label: '!=', icon: <X className="h-3 w-3" /> },
   { value: 'cross_above', label: 'Cross Up', icon: <ArrowUpRight className="h-3 w-3 rotate-[-45deg]" /> },
   { value: 'cross_below', label: 'Cross Down', icon: <ArrowDownRight className="h-3 w-3 rotate-[-45deg]" /> },
+  {
+    value: 'touches',
+    label: 'Touches',
+    icon: <Target className="h-3 w-3" />,
+  },
+
 ];
 
-const VALUE_OPTIONS = ['Current Price', 'Open', 'High', 'Low', 'Close', 'Volume'];
 
 export function ConditionBuilder({ condition, onChange, availableIndicators, index }: ConditionBuilderProps) {
   const isComposite = 'type' in condition && (condition.type === 'and' || condition.type === 'or');
@@ -75,6 +80,64 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
   };
 
 
+  const hasVolumeClimax = useMemo(() => {
+    return availableIndicators.some(ind => ind.name === 'volume_climax');
+  }, [availableIndicators]);
+
+
+  const hasSMCOrderBlock = useMemo(() => {
+    return availableIndicators.some(ind => ind.name === 'smc_order_block');
+  }, [availableIndicators]);
+
+  // إنشاء خيارات SMC الديناميكية
+  const SMCOptions = useMemo(() => {
+    if (!hasSMCOrderBlock) return [];
+
+    const smcIndicators = availableIndicators.filter(ind => ind.name === 'smc_order_block');
+    const options: string[] = [];
+
+    smcIndicators.forEach(ind => {
+      const displayId = ind.id || 'smc_order_block';
+      options.push(
+        `smc:${displayId}:bullish_zone_top`,
+        `smc:${displayId}:bullish_zone_bottom`,
+        `smc:${displayId}:bearish_zone_top`,
+        `smc:${displayId}:bearish_zone_bottom`
+      );
+    });
+
+    return options;
+  }, [hasSMCOrderBlock, availableIndicators]);
+
+
+  // إنشاء VALUE_OPTIONS ديناميكياً بناءً على وجود volume_climax
+  const VALUE_OPTIONS = useMemo(() => {
+    const baseOptions = [
+      'Current Price', 'Open', 'High', 'Low', 'Close', 'Volume',
+
+    ];
+    const options = [...baseOptions];
+
+
+
+    if (hasSMCOrderBlock) {
+      SMCOptions.forEach(opt => options.push(opt));
+    }
+
+    // إضافة المؤشرات المشتقة فقط إذا كان volume_climax موجوداً
+    if (hasVolumeClimax) {
+      return [
+        ...baseOptions,
+        'vc_blue_streak',
+        'green_candle_streak',
+        'red_candle_streak'
+      ];
+    }
+
+    return baseOptions;
+  }, [hasVolumeClimax]);
+
+
 
   // 2. Update Operator (Simple only)
   const updateOperator = (operator: Operator) => {
@@ -83,17 +146,33 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
     }
   };
 
-  // 3. Update Values (Simple only)
+  const formatDisplayValue = (val: string) => {
+    if (val.startsWith('indicator:smc:')) {
+      const parts = val.replace('indicator:', '').split(':');
+      if (parts.length === 3) {
+        return `${parts[0]} (${parts[1]} - ${parts[2].replace('_', ' ')})`;
+      }
+    }
+    return val;
+  };
+
+  const convertSMCValue = (val: string | number): string | number => {
+    if (typeof val === 'string' && val.startsWith('smc:')) {
+      return `indicator:${val}`;
+    }
+    return val;
+  };
+
   const updateLeftValue = (value: string | number) => {
     if ('left_value' in condition) {
-      const finalVal = value === 'number' ? 0 : value;
+      const finalVal = value === 'number' ? 0 : convertSMCValue(value);
       onChange({ ...condition, left_value: finalVal });
     }
   };
 
   const updateRightValue = (value: string | number) => {
     if ('right_value' in condition) {
-      const finalVal = value === 'number' ? 0 : value;
+      const finalVal = value === 'number' ? 0 : convertSMCValue(value);
       onChange({ ...condition, right_value: finalVal });
     }
   };
@@ -162,6 +241,12 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
     const [localRight, setLocalRight] = useState(
       typeof condition.right_value === 'number' ? condition.right_value : 0
     );
+
+    // يسمح باستخدام touches فقط إذا الطرفين قيم (price / zones) وليس أرقام
+    const isTouchOperatorAllowed =
+      typeof cond.left_value === 'string' &&
+      typeof cond.right_value === 'string';
+
 
     return (
       <div key={condIndex} className={`border ${isCondComposite ? 'border-[#2A2E39] bg-[#0B0E11] rounded-sm p-3' : 'border-transparent'}`}>
@@ -371,17 +456,40 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
                     <SelectContent className="bg-[#1E222D] border-[#2A2E39] text-xs">
                       {/* Standard Options */}
                       {VALUE_OPTIONS.map(opt => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        <SelectItem key={opt} value={opt}>
+                          {opt.startsWith('smc:')
+                            ? `${opt.split(':')[1]}: ${opt.split(':')[2].replace('_', ' ')}`
+                            : opt}
+                        </SelectItem>
                       ))}
+
                       <Separator className="my-1" />
                       <div className="px-2 py-1 text-[10px] font-bold text-slate-500 uppercase">Indicators</div>
+
                       {/* Indicators List */}
                       {availableIndicators.map(ind => (
                         <SelectItem key={ind.id} value={`indicator:${ind.id}`}>
                           {ind.id}
                         </SelectItem>
                       ))}
-                      {/* Option to switch to Number Input */}
+
+                      {/* SMC Specific Options Section */}
+                      {hasSMCOrderBlock && (
+                        <>
+                          <Separator className="my-1" />
+                          <div className="px-2 py-1 text-[10px] font-bold text-blue-400 uppercase">SMC Order Blocks</div>
+                          {SMCOptions.map(opt => (
+                            <SelectItem key={opt} value={`indicator:${opt}`}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>{opt.split(':')[1]}</span>
+                                <span className="text-slate-400">{opt.split(':')[2].replace('_', ' ')}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+
                       <SelectItem value="number" className="text-slate-400 font-mono">[ Manual Number ]</SelectItem>
                     </SelectContent>
                   </Select>
@@ -424,16 +532,40 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
                     <SelectContent className="bg-[#1E222D] border-[#2A2E39] text-xs">
                       {/* Standard Options */}
                       {VALUE_OPTIONS.map(opt => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        <SelectItem key={opt} value={opt}>
+                          {opt.startsWith('smc:')
+                            ? `${opt.split(':')[1]}: ${opt.split(':')[2].replace('_', ' ')}`
+                            : opt}
+                        </SelectItem>
                       ))}
+
                       <Separator className="my-1" />
                       <div className="px-2 py-1 text-[10px] font-bold text-slate-500 uppercase">Indicators</div>
+
                       {/* Indicators List */}
                       {availableIndicators.map(ind => (
                         <SelectItem key={ind.id} value={`indicator:${ind.id}`}>
                           {ind.id}
                         </SelectItem>
                       ))}
+
+                      {/* SMC Specific Options Section */}
+                      {hasSMCOrderBlock && (
+                        <>
+                          <Separator className="my-1" />
+                          <div className="px-2 py-1 text-[10px] font-bold text-blue-400 uppercase">SMC Order Blocks</div>
+                          {SMCOptions.map(opt => (
+                            <SelectItem key={opt} value={`indicator:${opt}`}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>{opt.split(':')[1]}</span>
+                                <span className="text-slate-400">{opt.split(':')[2].replace('_', ' ')}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+
                       <SelectItem value="number" className="text-slate-400 font-mono">[ Manual Number ]</SelectItem>
                     </SelectContent>
                   </Select>

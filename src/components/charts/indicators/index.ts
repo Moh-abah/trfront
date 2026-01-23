@@ -9,6 +9,6 @@ export * from './sma-indicator';
 export * from './obv-indicator';
 export { MAIndicator } from './ma';
 export { IndicatorManager } from './indicator-manager';
-export { VolumeClimaxIndicator } from './volume-climax';
+export { VolumeClimaxIndicator } from './volume-climax-indicator';
 export { SMCOrderBlockIndicator } from './smc-order-block-indicator';
 export type { IndicatorConfig, IndicatorData } from './base-indicator';

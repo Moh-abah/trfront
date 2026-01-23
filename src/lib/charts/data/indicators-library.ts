@@ -146,7 +146,7 @@ export const indicatorsLibrary: IndicatorLibrary = {
             id: 'volume_climax',
             name: 'volume_climax',
             displayName: 'Volume Climax',
-            description: 'Detects volume climax points indicating potential reversals',
+            description: 'Detects volume climax points with multiple ratio thresholds',
             category: 'volume',
             parameters: [
                 {
@@ -159,10 +159,46 @@ export const indicatorsLibrary: IndicatorLibrary = {
                     step: 1,
                 },
                 {
-                    name: 'std_mult',
-                    label: 'Std Multiplier',
+                    name: 'ratio_ultra',
+                    label: 'Ratio Ultra',
                     type: 'number',
-                    defaultValue: 2.0,
+                    defaultValue: 2.2,
+                    min: 0,
+                    max: 10,
+                    step: 0.1,
+                },
+                {
+                    name: 'ratio_very_high',
+                    label: 'Ratio Very High',
+                    type: 'number',
+                    defaultValue: 1.8,
+                    min: 0,
+                    max: 10,
+                    step: 0.1,
+                },
+                {
+                    name: 'ratio_high',
+                    label: 'Ratio High',
+                    type: 'number',
+                    defaultValue: 1.2,
+                    min: 0,
+                    max: 10,
+                    step: 0.1,
+                },
+                {
+                    name: 'ratio_normal',
+                    label: 'Ratio Normal',
+                    type: 'number',
+                    defaultValue: 0.8,
+                    min: 0,
+                    max: 10,
+                    step: 0.1,
+                },
+                {
+                    name: 'ratio_low',
+                    label: 'Ratio Low',
+                    type: 'number',
+                    defaultValue: 0.4,
                     min: 0,
                     max: 10,
                     step: 0.1,
@@ -171,13 +207,27 @@ export const indicatorsLibrary: IndicatorLibrary = {
             seriesType: 'line',
             defaultColor: '#4ECDC4',
             defaultLineWidth: 2,
-            defaultParameters: { period: 20, std_mult: 2.0 },
+            defaultParameters: {
+                period: 20,
+                ratio_ultra: 2.2,
+                ratio_very_high: 1.8,
+                ratio_high: 1.2,
+                ratio_normal: 0.8,
+                ratio_low: 0.4
+            },
             overlay: false,
             outputCount: 1,
             backendConfig: {
                 name: 'volume_climax',
                 type: 'volume',
-                params: { period: 20, std_mult: 2.0 }
+                params: {
+                    period: 20,
+                    ratio_ultra: 2.2,
+                    ratio_very_high: 1.8,
+                    ratio_high: 1.2,
+                    ratio_normal: 0.8,
+                    ratio_low: 0.4
+                }
             }
         },
         {

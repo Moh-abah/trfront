@@ -7,6 +7,8 @@ import { Button } from '@/components/uiadv/button';
 import { Badge } from '@/components/uiadv/badge';
 import { Checkbox } from '@/components/uiadv/checkbox';
 import { Label } from '@/components/uiadv/label';
+
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/uiadv/tabs';
 import {
   Table,
@@ -86,7 +88,8 @@ import {
   SelectValue,
 } from '@/components/uiadv/select';
 import { Separator } from '@/components/uiadv/separator';
-
+import { SMCOrderBlockIndicator } from '@/components/charts/indicators/smc-order-block-indicator';
+import { VolumeClimaxIndicator } from '@/components/charts/indicators/volume-climax-indicator';
 interface BacktestChartProps {
   candles: VisualCandle[];
   tradeMarkers: TradeMarker[];
@@ -250,20 +253,81 @@ export function BacktestChart({
     showTradesPanel: false,
   });
   const [chartTimeframe, setChartTimeframe] = useState(timeframe);
+
+  const [showSMC, setShowSMC] = useState(true);
+  const smcIndicatorRef = useRef<SMCOrderBlockIndicator | null>(null);
+
+  const [showVolumeClimax, setShowVolumeClimax] = useState(true);
+  const volumeClimaxRef = useRef<VolumeClimaxIndicator | null>(null);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // استخراج المؤشرات المتاحة من البيانات
+
+  // ✅ دالة محسنة لاكتشاف معرف مؤشر SMC
+  const detectSMCIndicatorId = (candles: VisualCandle[]): string | null => {
+    if (!candles || candles.length === 0) return null;
+
+    // نقوم بالتكرار على الشموع للعثور على أول شمعة تحتوي على بيانات SMC
+    // بدلاً من الاعتماد فقط على الشمعة الأولى (التي قد تكون فارغة في فترة Warmup)
+    for (const candle of candles) {
+      const sampleKeys = Object.keys(candle);
+      // البحث عن أي مفتاح يشير إلى كائن بلوك
+      const smcKey = sampleKeys.find(key => key.includes(':bullish_obj') || key.includes(':bearish_obj'));
+
+      if (smcKey) {
+        // نقوم بتقسيم المفتاح عند أول نقطتين
+        const parts = smcKey.split(':');
+
+        if (parts.length > 0) {
+          
+          let rawId = parts[0];
+          if (rawId.startsWith('ind_')) {
+            rawId = rawId.substring(4);
+          }
+          console.log(`[SMC] Detected ID: ${rawId} from key: ${smcKey}`);
+          return rawId;
+        }
+      }
+    }
+
+    return null;
+  };
+  
   const extractedIndicators = useMemo(() => {
     const indicators = new Set<string>();
+
+    const smcId = detectSMCIndicatorId(candles);
+
     candles.forEach(candle => {
-      // 1. البحث في مستوى الجذر المباشر (يدعم بياناتك الحالية)
+      // 1. البحث في مستوى الجذر المباشر للمؤشرات العادية
       Object.keys(candle).forEach(key => {
-        if (key.startsWith('ind_')) {
-          indicators.add(key.replace('ind_', ''));
+        if (key.startsWith('ind_') && key !== 'ind_smc_order_block') {
+       
+          const cleanKey = key.replace('ind_', '');
+
+          // ✅ الفلتر الجذري: إذا كان المفتاح يبدأ بـ ID الـ SMC متبوعاً بـ (:)
+          // فهذا يعني أنه جزء فرعي (sub-key) من الـ SMC (مثل s123k:bullish_obj)
+          // نقوم باستبعاده لإظهار الـ ID الرئيسي فقط.
+          if (smcId && cleanKey.startsWith(smcId + ':')) {
+            return;
+          }
+
+          indicators.add(cleanKey);
+        }
+
+
+
+   
+        if (['volume_climax', 'volume_bar', 'climax_point'].includes(key)) {
+          indicators.add(key);
         }
       });
 
-      // 2. البحث داخل كائن indicators (للتوافق مع البنيات القياسية)
+
+      
+
+      // 3. البحث داخل كائن indicators (إذا وجد)
       if (candle.indicators) {
         Object.keys(candle.indicators).forEach(key => {
           if (key.startsWith('ind_')) {
@@ -272,8 +336,20 @@ export function BacktestChart({
         });
       }
     });
+
+
+    if (smcId) {
+      // نضيف الـ ID نفسه كاسم للمؤشر في القائمة
+      indicators.add(smcId);
+    }
+
     return Array.from(indicators);
   }, [candles]);
+
+
+
+
+
 
   // دالة آمنة لإزالة المخطط
   const safeRemoveChart = useCallback(() => {
@@ -288,6 +364,25 @@ export function BacktestChart({
       volumeSeriesRef.current = null;
       equitySeriesRef.current = null;
       indicatorSeriesRef.current.clear();
+
+
+      if (smcIndicatorRef.current) {
+        // إذا كان الـ Indicator يحتوي على دالة destroy، قم باستدعائها
+        if (typeof smcIndicatorRef.current.destroy === 'function') {
+          smcIndicatorRef.current.destroy();
+        }
+        // تصفير الـ Ref ليتمكن الكود من إنشاء مثيل جديد
+        smcIndicatorRef.current = null;
+      }
+
+      // ✅ إضافة تنظيف Volume Climax (مهم جداً)
+      if (volumeClimaxRef.current) {
+        if (typeof volumeClimaxRef.current.destroy === 'function') {
+          volumeClimaxRef.current.destroy();
+        }
+        volumeClimaxRef.current = null;
+      }
+    
     }
   }, []);
 
@@ -311,6 +406,130 @@ export function BacktestChart({
     return 'separate'; // الافتراضي: لوحة منفصلة للسلامة
   }
 
+
+  // ✅ دالة لمعالجة بيانات Volume Climax (تعتمد على وقت API)
+  const processVolumeClimaxData = useMemo(() => {
+    if (!candles || !showVolumeClimax) return null;
+
+    const climaxPoints = [];
+    const volumeBars = [];
+
+    candles.forEach((candle: any) => {
+      // التحقق من وجود بيانات Volume Bar
+      if (candle.volume_bar && typeof candle.volume_bar === 'object') {
+        volumeBars.push({
+          time: candle.volume_bar.time, // استخدام الوقت من API
+          value: candle.volume_bar.value,
+          ratio: candle.volume_bar.ratio,
+          color: candle.volume_bar.color
+        });
+      }
+
+      // التحقق من وجود بيانات Climax Point
+      if (candle.climax_point && typeof candle.climax_point === 'object') {
+        climaxPoints.push({
+          time: candle.climax_point.time, // استخدام الوقت من API
+          high: candle.climax_point.high,
+          low: candle.climax_point.low,
+          ratio: candle.climax_point.ratio,
+          color: candle.climax_point.color
+        });
+      }
+    });
+
+    // تجهيز البيانات بالشكل الذي يتوقعه الـ Wrapper
+    return {
+      meta: {
+        render: {
+          climax_points: climaxPoints,
+          volume_bars: volumeBars
+        }
+      }
+    };
+  }, [candles, showVolumeClimax]);
+
+
+  // ✅ Effect موحد لتحديث بيانات Volume Climax
+  useEffect(() => {
+    // نستخدم console log للتأكد من أن البيانات تصل
+    console.log('[BacktestChart] Updating Volume Climax...', {
+      enabled: showVolumeClimax,
+      dataCount: processVolumeClimaxData?.meta?.render?.climax_points?.length || 0
+    });
+
+    if (showVolumeClimax && volumeClimaxRef.current && processVolumeClimaxData) {
+      // استخدام setTimeout صغير جداً لضمان أن المخطط قد أكمل عملية الـ Attachment
+      // خاصة عند إعادة رسم المكون
+      const timer = setTimeout(() => {
+        try {
+          volumeClimaxRef.current.updateData(processVolumeClimaxData);
+        } catch (e) {
+          console.error("VC Update Error", e);
+        }
+      }, 10);
+
+      // تنظيف الـ timer لمنع تسريب الذاكرة
+      return () => clearTimeout(timer);
+    }
+  }, [processVolumeClimaxData, showVolumeClimax]);
+
+  // ✅ دالة لمعالجة بيانات SMC من البيانات المسطحة (Flattened)
+  // ✅ دالة لمعالجة بيانات SMC من البيانات المسطحة (Flattened)
+  const processSMCData = useMemo(() => {
+    if (!candles || !showSMC) return null;
+
+    // 1. اكتشاف الـ ID (سيجد s123k مثلاً)
+    const smcId = detectSMCIndicatorId(candles);
+    if (!smcId) return null;
+
+    const blocksMap = new Map<string, any>();
+
+    candles.forEach((candle: VisualCandle) => {
+      // نريد معالجة كلا الجانبين: الصاعد والهابط
+      ['bullish', 'bearish'].forEach((side) => {
+
+
+        const prefix = `ind_${smcId}:${side}_obj_`;
+
+   
+        const id = candle[`${prefix}id` as keyof VisualCandle] as string;
+
+        // إذا وجدنا معرف البلوك، فهذا يعني أن البيانات موجودة لهذه الشمعة
+        if (id && typeof id === 'string') {
+          // 4. تجميع البيانات المسطحة في كائن واحد
+          const blockData = {
+            id: id,
+            side: side,
+            time_from: candle[`${prefix}time_from` as keyof VisualCandle] as number,
+            time_to: candle[`${prefix}time_to` as keyof VisualCandle] as number,
+            price_top: candle[`${prefix}price_top` as keyof VisualCandle] as number,
+            price_bottom: candle[`${prefix}price_bottom` as keyof VisualCandle] as number,
+            mitigated: Boolean(candle[`${prefix}mitigated` as keyof VisualCandle]),
+            strength: candle[`${prefix}strength` as keyof VisualCandle] as number,
+          };
+
+          // 5. حفظ أو تحديث البلوك في الخريطة
+          // نستخدم الـ ID كمفتاح فريد
+          blocksMap.set(id, blockData);
+        }
+      });
+    });
+
+    // تجهيز البيانات بالشكل الذي يتوقعه الـ Indicator Component
+    return {
+      metadata: {
+        order_blocks: Array.from(blocksMap.values()),
+        swing_points: []
+      }
+    };
+  }, [candles, showSMC]);
+
+  // ✅ Effect لتحديث بيانات SMC
+  useEffect(() => {
+    if (showSMC && smcIndicatorRef.current && processSMCData) {
+      smcIndicatorRef.current.updateData(processSMCData);
+    }
+  }, [processSMCData, showSMC]);
 
   const calculateLayout = useCallback(() => {
     // إعادة تعيين الذاكرة لتسريح المراجع القديمة
@@ -464,6 +683,8 @@ export function BacktestChart({
 
 
 
+    
+
     // إضافة المؤشرات المحددة
     selectedIndicators.filter(ind => ind.enabled).forEach((indicator, index) => {
       const layout = getIndicatorLayout(indicator.name);
@@ -498,12 +719,86 @@ export function BacktestChart({
       addTradeMarkers(chart, tradeMarkers, candles, candlestickSeries);
     }
 
+
+    // ✅ إعداد Volume Climax Indicator
+    // ✅ إعداد Volume Climax Indicator
+    if (showVolumeClimax) {
+      if (!volumeClimaxRef.current) {
+        try {
+          volumeClimaxRef.current = new VolumeClimaxIndicator(
+            chart,
+            {}, // config
+            candlestickSeries
+          );
+          volumeClimaxRef.current.createSeries();
+
+          // ✅ إضافة مهمة جداً: تحديث البيانات فوراً بعد الإنشاء
+          // هذا يضمن وصول البيانات للمؤشر الجديد مباشرة دون انتظار الـ Effect
+          if (processVolumeClimaxData) {
+            console.log('[createMainChart] Force updating VC immediately...');
+            volumeClimaxRef.current.updateData(processVolumeClimaxData);
+          }
+
+        } catch (error) {
+          console.error('Failed to load Volume Climax Indicator:', error);
+        }
+      }
+    } else {
+      // تنظيف المؤشر إذا تم إخفاؤه
+      if (volumeClimaxRef.current) {
+        try {
+          volumeClimaxRef.current.destroy();
+          volumeClimaxRef.current = null;
+        } catch (e) {
+          console.error('Error destroying Volume Climax:', e);
+        }
+      }
+    }
+
+    // ✅ إعداد SMC Order Block Indicator
+    if (showSMC) {
+      if (!smcIndicatorRef.current) {
+        try {
+          smcIndicatorRef.current = new SMCOrderBlockIndicator(
+            chart,
+            {}, // config
+            candlestickSeries
+          );
+          smcIndicatorRef.current.createSeries();
+
+          // ✅ إضافة مهمة جداً: تحديث البيانات فوراً بعد الإنشاء
+          // هذا يضمن وصول البيانات للمؤشر الجديد مباشرة دون انتظار الـ Effect
+          if (processSMCData) {
+            console.log('[createMainChart] Force updating SMC immediately...');
+            smcIndicatorRef.current.updateData(processSMCData);
+          }
+
+        } catch (error) {
+          console.error('Failed to load SMC Order Block Indicator:', error);
+        }
+      }
+    } else {
+      // تنظيف المؤشر إذا تم إخفاؤه
+      if (smcIndicatorRef.current) {
+        try {
+          smcIndicatorRef.current.destroy();
+          smcIndicatorRef.current = null;
+        } catch (e) {
+          console.error('Error destroying SMC Order Block:', e);
+        }
+      }
+    }
+
     // إضافة حدث crosshair
     chart.subscribeCrosshairMove(handleCrosshairMove);
 
     chartRef.current = chart;
-  }, [candles, selectedIndicators, showTrades, showVolume, tradeMarkers, safeRemoveChart, calculateLayout]);
+  }, [candles, selectedIndicators, showTrades, showVolume, tradeMarkers, safeRemoveChart, calculateLayout ,showVolumeClimax, showSMC]);
 
+
+
+
+  
   // إنشاء مخطط الأداء (منحنى رأس المال أو Drawdown)
   const createPerformanceChart = useCallback(() => {
     if (!chartContainerRef.current || !equityCurve || !drawdownCurve || !candles?.length) return;
@@ -916,9 +1211,12 @@ export function BacktestChart({
   useEffect(() => {
     if (!chartContainerRef.current || candles.length === 0) return;
 
-    if (chartType === 'candlestick') {
+    // إذا كان التبويب النشط هو 'chart'، أنشئ مخطط الشموع
+    if (activeTab === 'chart') {
       createMainChart();
-    } else {
+    }
+    // إذا كان التبويب النشط هو 'performance'، أنشئ مخطط الأداء
+    else if (activeTab === 'performance') {
       createPerformanceChart();
     }
 
@@ -938,6 +1236,7 @@ export function BacktestChart({
       safeRemoveChart();
     };
   }, [
+    activeTab, // أضفنا activeTab هنا
     chartType,
     createMainChart,
     createPerformanceChart,
@@ -945,8 +1244,11 @@ export function BacktestChart({
     selectedIndicators,
     showVolume,
     showTrades,
-    lineChartMode
+    lineChartMode,
+    candles, // قد نضيف candles لأنها متغيرة عند تحميل بيانات جديدة
   ]);
+
+
 
   // تحديث البيانات عند تغيير الشموع
   useEffect(() => {
@@ -1134,6 +1436,20 @@ export function BacktestChart({
                   <Checkbox id="show-vol" checked={showVolume} onCheckedChange={setShowVolume} className="h-3 w-3 border-gray-600" />
                   <Label htmlFor="show-trades" className="text-[10px] text-gray-400 cursor-pointer">Trades</Label>
                   <Checkbox id="show-trades" checked={showTrades} onCheckedChange={setShowTrades} className="h-3 w-3 border-gray-600" />
+
+
+                  <Label htmlFor="show-smc" className="text-[10px] text-gray-400 cursor-pointer">SMC</Label>
+                  <Checkbox id="show-smc" checked={showSMC} onCheckedChange={setShowSMC} className="h-3 w-3 border-gray-600" />
+
+
+                  {/* Volume Climax Control */}
+                  <Label htmlFor="show-vc" className="text-[10px] text-gray-400 cursor-pointer">VC</Label>
+                  <Checkbox
+                    id="show-vc"
+                    checked={showVolumeClimax}
+                    onCheckedChange={setShowVolumeClimax}
+                    className="h-3 w-3 border-gray-600"
+                  />
                 </div>
               </>
             )}
@@ -1514,6 +1830,8 @@ export function BacktestChart({
                         </div>
                       </div>
                       <Checkbox checked={isSelected} className="border-gray-600 pointer-events-none" />
+
+
                     </CardContent>
                   </Card>
                 );
@@ -1529,32 +1847,43 @@ export function BacktestChart({
 
 
 // Helper functions
+// Helper functions
 function getCategoryForIndicator(indicator: string): string {
   const lowerIndicator = indicator.toLowerCase();
-  if (lowerIndicator.includes('sma') || lowerIndicator.includes('ema') || lowerIndicator.includes('wma')) {
-    return 'اتجاه';
+
+  // SMC / Order Blocks
+  if (lowerIndicator.includes('smc') || lowerIndicator.includes('order_block')) {
+    return 'Smart Money Concepts';
   }
+
+  // Trend
+  if (lowerIndicator.includes('sma') || lowerIndicator.includes('ema') || lowerIndicator.includes('wma') || lowerIndicator.includes('bollinger')) {
+    return 'Trend';
+  }
+
+  // Momentum
   if (lowerIndicator.includes('rsi') || lowerIndicator.includes('macd') || lowerIndicator.includes('stochastic')) {
-    return 'زخم';
+    return 'Momentum';
   }
-  if (lowerIndicator.includes('bollinger') || lowerIndicator.includes('atr') || lowerIndicator.includes('vol')) {
-    return 'تقلب';
-  }
+
+  // Volume
   if (lowerIndicator.includes('volume') || lowerIndicator.includes('obv')) {
-    return 'حجم';
+    return 'Volume';
   }
-  return 'عام';
+
+  return 'Others';
 }
 
 function getIndicatorDescription(indicator: string): string {
   const lowerIndicator = indicator.toLowerCase();
-  if (lowerIndicator.includes('sma')) return 'المتوسط المتحرك البسيط - مقياس لاتجاه السعر';
-  if (lowerIndicator.includes('ema')) return 'المتوسط المتحرك الأسي - يركز أكثر على الأسعار الحديثة';
-  if (lowerIndicator.includes('rsi')) return 'مؤشر القوة النسبية - قياس زخم السعر';
-  if (lowerIndicator.includes('macd')) return 'تقارب وتباعد المتوسطات المتحركة';
-  if (lowerIndicator.includes('bollinger')) return 'نطاقات بولينجر - قياس تقلب السعر';
-  if (lowerIndicator.includes('atr')) return 'معدل المدى الحقيقي - قياس التقلب';
-  if (lowerIndicator.includes('stochastic')) return 'المؤشر العشوائي - تحديد نقاط التشبع';
-  if (lowerIndicator.includes('volume')) return 'حجم التداول - قوة الحركة السعرية';
-  return 'مؤشر تقني لتحليل الأسواق';
+  if (lowerIndicator.includes('smc') || lowerIndicator.includes('order_block')) return 'Smart Money Concepts - Order Blocks';
+  if (lowerIndicator.includes('sma')) return 'Simple Moving Average';
+  if (lowerIndicator.includes('ema')) return 'Exponential Moving Average';
+  if (lowerIndicator.includes('rsi')) return 'Relative Strength Index';
+  if (lowerIndicator.includes('macd')) return 'MACD';
+  if (lowerIndicator.includes('bollinger')) return 'Bollinger Bands';
+  if (lowerIndicator.includes('atr')) return 'Average True Range';
+  if (lowerIndicator.includes('stochastic')) return 'Stochastic Oscillator';
+  if (lowerIndicator.includes('volume') || lowerIndicator.includes('obv')) return 'Volume Analysis';
+  return 'Technical Indicator';
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { StrategyConfig } from '@/types/backtest';
 
 const BACKEND_URL = 'http://161.97.73.254:8017';
-
+// const BACKEND_URL = 'http://127.0.0.1:8000';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();

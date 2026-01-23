@@ -45,6 +45,11 @@ export default function StrategyBuilderPage() {
     const [exitRules, setExitRules] = useState<ExitRule[]>([]);
     const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
 
+
+    const [isLoadingStrategies, setIsLoadingStrategies] = useState(false);
+
+
+
     const [riskManagement, setRiskManagement] = useState<RiskManagement>({
         stop_loss_percentage: 2.0,
         take_profit_percentage: 4.0,
@@ -94,7 +99,6 @@ export default function StrategyBuilderPage() {
             description: strategyDescription,
             base_timeframe: baseTimeframe,
             position_side: positionSide,
-            // ✅ هنا يتم إرسال حالة المؤشرات مباشرة. بما أن الحالة تحتوي على الـ id المعدل، سيتم إرساله بشكل صحيح للباك إند.
             indicators,
             entry_rules: entryRules,
             exit_rules: exitRules,
@@ -134,8 +138,9 @@ export default function StrategyBuilderPage() {
         }
     };
 
-    // --- API Calls ---
+
     const loadStrategies = async () => {
+        setIsLoadingStrategies(true);
         try {
             const response = await fetch('/api/v1/strategies1/list?active_only=false');
             const data = await response.json();
@@ -144,6 +149,8 @@ export default function StrategyBuilderPage() {
             }
         } catch (error) {
             console.error('Error loading strategies:', error);
+        } finally {
+            setIsLoadingStrategies(false);
         }
     };
 
@@ -709,12 +716,21 @@ export default function StrategyBuilderPage() {
                         />
                     </div>
                 </aside>
-
                 {/* --- DRAWER: SAVED STRATEGIES --- */}
                 {isStrategiesOpen && (
-                    <div className="fixed right-0 top-12 bottom-0 w-80 sm:w-96 bg-card border-l border-border shadow-2xl z-30 flex flex-col animate-in slide-in-from-right duration-200 ease-out">
+                    <div className="fixed right-0 top-12 bottom-0 w-full sm:w-80 md:w-96 bg-card border-l border-border shadow-2xl z-30 flex flex-col animate-in slide-in-from-right duration-200 ease-out">
+                        {/* Header */}
                         <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
-                            <span className="text-xs font-bold text-foreground uppercase tracking-widest">Library</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground uppercase tracking-widest">Library</span>
+                                {isLoadingStrategies && (
+                                    <div className="flex items-center gap-1">
+                                        <div className="h-2 w-2 animate-pulse rounded-full bg-primary"></div>
+                                        <div className="h-2 w-2 animate-pulse rounded-full bg-primary" style={{ animationDelay: '0.2s' }}></div>
+                                        <div className="h-2 w-2 animate-pulse rounded-full bg-primary" style={{ animationDelay: '0.4s' }}></div>
+                                    </div>
+                                )}
+                            </div>
                             <Button
                                 onClick={() => setIsStrategiesOpen(false)}
                                 variant="ghost"
@@ -724,68 +740,127 @@ export default function StrategyBuilderPage() {
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
-                        <ScrollArea className="flex-1 custom-scrollbar">
-                            <div className="p-3 space-y-2">
-                                {savedStrategies.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                                        <FolderOpen className="h-8 w-8 mb-2 opacity-50" />
-                                        <div className="text-xs font-mono uppercase">No strategies found</div>
-                                    </div>
-                                ) : (
-                                    savedStrategies.map((strategy) => (
-                                        <div
-                                            key={strategy.id}
-                                            className="group p-3 bg-background border border-border hover:border-primary rounded-sm transition-all cursor-pointer relative"
-                                        >
-                                            <div className="flex items-start justify-between mb-1">
-                                                <div className="flex-1 pr-2 min-w-0">
-                                                    <div className="text-[11px] font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                                                        {strategy.name}
+
+                        {/* Content Area - Fixed with proper scrolling */}
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                            <ScrollArea className="h-full custom-scrollbar">
+                                <div className="p-3 space-y-2">
+                                    {/* Loading State */}
+                                    {isLoadingStrategies ? (
+                                        <div className="space-y-3">
+                                            {/* Skeleton Loaders */}
+                                            {[1, 2, 3].map((i) => (
+                                                <div key={i} className="p-3 bg-background border border-border rounded-sm animate-pulse">
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div className="flex-1 space-y-2">
+                                                            <div className="h-4 bg-muted rounded w-3/4"></div>
+                                                            <div className="h-3 bg-muted rounded w-1/4"></div>
+                                                        </div>
+                                                        <div className="h-4 w-4 bg-muted rounded"></div>
                                                     </div>
-                                                    <div className="text-[9px] text-muted-foreground font-mono mt-0.5">
-                                                        {new Date(strategy.created_at || Date.now()).toLocaleDateString()}
+                                                    <div className="h-3 bg-muted rounded w-full mb-3"></div>
+                                                    <div className="flex items-center justify-between pt-3 border-t border-border">
+                                                        <div className="flex gap-2">
+                                                            <div className="h-5 w-10 bg-muted rounded"></div>
+                                                            <div className="h-5 w-10 bg-muted rounded"></div>
+                                                        </div>
+                                                        <div className="flex gap-1">
+                                                            <div className="h-6 w-6 bg-muted rounded"></div>
+                                                            <div className="h-6 w-6 bg-muted rounded"></div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-
-                                            <div className="text-[10px] text-muted-foreground line-clamp-2 mb-3 h-8 leading-tight">
-                                                {strategy.description || 'No description provided.'}
-                                            </div>
-
-                                            <div className="flex items-center justify-between pt-2 border-t border-border">
-                                                <div className="flex gap-2 flex-wrap">
-                                                    <span className="text-[9px] bg-card px-1.5 py-0.5 rounded text-muted-foreground border border-border">
-                                                        {strategy.indicators_count} Ind
-                                                    </span>
-                                                    <span className="text-[9px] bg-card px-1.5 py-0.5 rounded text-muted-foreground border border-border">
-                                                        {strategy.entry_rules_count} Rules
-                                                    </span>
-                                                </div>
-
-                                                <div className="flex gap-1">
-                                                    <Button
-                                                        onClick={() => loadStrategyFromDB(strategy)}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-6 w-6 p-0 text-success hover:bg-success/10 hover:text-success"
-                                                    >
-                                                        <Download className="h-3 w-3" />
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => deleteStrategy(strategy.name)}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                                    >
-                                                        <Trash2 className="h-3 w-3" />
-                                                    </Button>
-                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : savedStrategies.length === 0 ? (
+                                        // Empty State
+                                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                                            <FolderOpen className="h-12 w-12 mb-3 opacity-30" />
+                                            <div className="text-sm font-medium mb-1">No strategies found</div>
+                                            <div className="text-xs text-muted-foreground text-center max-w-[200px]">
+                                                Create your first strategy and save it here
                                             </div>
                                         </div>
-                                    ))
-                                )}
+                                    ) : (
+                                        // Strategies List
+                                        savedStrategies.map((strategy) => (
+                                            <div
+                                                key={strategy.id}
+                                                className="group p-3 bg-background border border-border hover:border-primary rounded-sm transition-all cursor-pointer relative hover:shadow-sm"
+                                            >
+                                                <div className="flex items-start justify-between mb-1">
+                                                    <div className="flex-1 pr-2 min-w-0">
+                                                        <div className="text-[11px] font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                                                            {strategy.name}
+                                                        </div>
+                                                        <div className="text-[9px] text-muted-foreground font-mono mt-0.5">
+                                                            {new Date(strategy.created_at || Date.now()).toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="text-[10px] text-muted-foreground line-clamp-2 mb-3 min-h-[2rem] leading-tight">
+                                                    {strategy.description || 'No description provided.'}
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-2 border-t border-border">
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        <span className="text-[9px] bg-card px-1.5 py-0.5 rounded text-muted-foreground border border-border">
+                                                            {strategy.indicators_count || 0} Ind
+                                                        </span>
+                                                        <span className="text-[9px] bg-card px-1.5 py-0.5 rounded text-muted-foreground border border-border">
+                                                            {strategy.entry_rules_count || 0} Rules
+                                                        </span>
+                                                        {strategy.is_active !== undefined && (
+                                                            <span className={`text-[9px] px-1.5 py-0.5 rounded border ${strategy.is_active
+                                                                    ? 'text-green-500 border-green-500/30 bg-green-500/10'
+                                                                    : 'text-red-500 border-red-500/30 bg-red-500/10'
+                                                                }`}>
+                                                                {strategy.is_active ? 'Active' : 'Inactive'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex gap-1">
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                loadStrategyFromDB(strategy);
+                                                            }}
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-6 w-6 p-0 text-success hover:bg-success/10 hover:text-success"
+                                                            title="Load Strategy"
+                                                        >
+                                                            <Download className="h-3 w-3" />
+                                                        </Button>
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                deleteStrategy(strategy.name);
+                                                            }}
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                            title="Delete Strategy"
+                                                        >
+                                                            <Trash2 className="h-3 w-3" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </div>
+
+                        {/* Footer (Optional) */}
+                        <div className="h-10 border-t border-border bg-card flex items-center justify-center shrink-0">
+                            <div className="text-[10px] text-muted-foreground">
+                                {savedStrategies.length} {savedStrategies.length === 1 ? 'strategy' : 'strategies'} saved
                             </div>
-                        </ScrollArea>
+                        </div>
                     </div>
                 )}
 

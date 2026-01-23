@@ -1,4 +1,4 @@
-// @ts-nocheck
+//@ts-nocheck
 
 'use client';
 
@@ -99,16 +99,35 @@ export function IndicatorSelector({ selectedIndicators, onIndicatorsChange, time
     onIndicatorsChange(newIndicators);
   };
 
-  const updateIndicatorParam = (id: string, paramName: string, value: number) => {
+  // استبدل الدالة الحالية بهذه الدالة التي تدعم جميع الأنواع
+  const updateIndicatorParam = (id: string, paramName: string, value: any) => {
     const newIndicators = selectedIndicators.map(ind => {
       if (ind.id === id) {
-        return { ...ind, params: { ...ind.params, [paramName]: value } };
+        const currentValue = ind.params[paramName];
+
+        // التحويل التلقائي بناءً على النوع الأصلي
+        let convertedValue = value;
+
+        if (typeof currentValue === 'number') {
+          convertedValue = Number(value) || 0;
+        } else if (typeof currentValue === 'boolean') {
+          convertedValue = Boolean(value);
+        } else if (typeof currentValue === 'string') {
+          convertedValue = String(value);
+        }
+
+        return {
+          ...ind,
+          params: {
+            ...ind.params,
+            [paramName]: convertedValue
+          }
+        };
       }
       return ind;
     });
     onIndicatorsChange(newIndicators);
   };
-
   // ✅ هذه الدالة تقوم بتحديث الـ ID بناءً على ما يكتبه المستخدم في حقل الإدخال
   const updateIndicatorLabel = (currentId: string, newLabel: string) => {
     const newIndicators = selectedIndicators.map(ind => {
@@ -304,23 +323,51 @@ export function IndicatorSelector({ selectedIndicators, onIndicatorsChange, time
                                       Parameters
                                     </span>
                                   </div>
+
                                   <div className="grid grid-cols-2 gap-2">
-                                    {Object.entries(activeInd?.params || {}).map(([paramName, paramValue]) => (
-                                      <div key={paramName} className="flex items-center gap-2 bg-background p-2 rounded-sm border border-border">
-                                        <Label className="text-[9px] text-muted-foreground uppercase font-mono cursor-pointer select-none">
-                                          {paramName}
-                                        </Label>
-                                        <Input
-                                          type="number"
-                                          step={
-                                            paramName.includes('percentage') || paramName.includes('std') ? 0.01 : 1
-                                          }
-                                          value={paramValue as number}
-                                          onChange={(e) => updateIndicatorParam(activeInd.id!, paramName, parseFloat(e.target.value) || 0)}
-                                          className="h-6 w-full text-[10px] bg-transparent border-0 text-right focus:ring-0 p-0 font-mono text-foreground"
-                                        />
-                                      </div>
-                                    ))}
+                                    {Object.entries(activeInd?.params || {}).map(([paramName, paramValue]) => {
+                                      const paramType = typeof paramValue;
+
+                                      if (paramType === 'boolean') {
+                                        return (
+                                          <div key={paramName} className="flex items-center justify-between bg-background p-2 rounded-sm border border-border">
+                                            <Label className="text-[10px] text-muted-foreground uppercase">
+                                              {paramName}
+                                            </Label>
+                                            <div className="flex gap-1">
+                                              <button
+                                                className={`px-4 py-1 text-[10px] rounded ${paramValue ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+                                                onClick={() => updateIndicatorParam(activeInd.id!, paramName, true)}
+                                              >
+                                                true
+                                              </button>
+                                              <button
+                                                className={`px-4 py-1 text-[10px] rounded ${!paramValue ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground'}`}
+                                                onClick={() => updateIndicatorParam(activeInd.id!, paramName, false)}
+                                              >
+                                                false
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+
+                                      // باقي الأنواع (number أو string)
+                                      return (
+                                        <div key={paramName} className="flex items-center gap-2 bg-background p-2 rounded-sm border border-border">
+                                          <Label className="text-[10px] text-muted-foreground uppercase">
+                                            {paramName}
+                                          </Label>
+                                          <Input
+                                            type={paramType === 'number' ? 'number' : 'text'}
+                                            step={paramType === 'number' ? (paramName.includes('percentage') ? 0.01 : 1) : undefined}
+                                            value={paramValue}
+                                            onChange={(e) => updateIndicatorParam(activeInd.id!, paramName, e.target.value)}
+                                            className="h-6 w-full text-[10px] bg-transparent border-0 text-right focus:ring-0 p-0 font-mono"
+                                          />
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}
@@ -356,3 +403,4 @@ export function IndicatorSelector({ selectedIndicators, onIndicatorsChange, time
     </div>
   );
 }
+

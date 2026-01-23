@@ -114,52 +114,52 @@ export function MarketOverviewDropdown({
 
             marketOverviewService.connect({
                 onConnected: () => {
-                    console.log("[MarketOverviewDropdown] WebSocket connected");
+                
                     setConnected(true);
                     setLoading(false);
                 },
 
                 onMessage: (data: MarketData[]) => {
-                    console.log("[MarketOverviewDropdown] Received market data:", data.length);
-
+                 
 
                     const validMarkets = data.filter(market => isValidMarket(market.symbol));
 
-                    console.log("[MarketOverviewDropdown] Filtered valid markets:", validMarkets.length);
                     setMarkets(validMarkets);
                     setLoading(false);
                 },
 
                 onDisconnected: () => {
-                    console.log("[MarketOverviewDropdown] WebSocket disconnected");
+                
                     setConnected(false);
                 },
                 onError: (error) => {
-                    console.error("[MarketOverviewDropdown] WebSocket error:", error);
+                   
                     setConnected(false);
                     setLoading(false);
                 },
             });
 
             return () => {
-                console.log("[MarketOverviewDropdown] Cleanup, disconnecting WebSocket");
+          
                 marketOverviewService.disconnect();
             };
         }
     }, [isOpen, setLoading, setConnected, setMarkets]);
 
-    // Handle clicking on a market
+
+
     const handleMarketClick = useCallback(
         (symbol: string) => {
             onClose();
             setSearchQuery("");
-            router.push(`/chart/${symbol}?market=crypto&timeframe=1m`);
+
+            const savedTimeframe = localStorage.getItem('chart-timeframe') || '1m';
+
+            router.push(`/chart/${symbol}?market=crypto&timeframe=${savedTimeframe}`);
         },
         [router, onClose]
     );
 
-    // Format price for display
-    // Format price for display
     const formatPrice = (price: number) => {
         if (price === 0) return "0.00";
 

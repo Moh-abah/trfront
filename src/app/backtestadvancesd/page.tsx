@@ -123,6 +123,8 @@ export default function StrategyBuilderPage() {
   const [showDetailedResults, setShowDetailedResults] = useState(false);
   const [showSidePanel, setShowSidePanel] = useState(false);
 
+
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
   // --- NEW STATES FOR LOADING STRATEGIES ---
   const [showLibraryPanel, setShowLibraryPanel] = useState(false);
   const [savedStrategies, setSavedStrategies] = useState<StrategyFromDB[]>([]);
@@ -185,16 +187,17 @@ export default function StrategyBuilderPage() {
 
 
 
-  // Fetch list when library panel opens
+
   useEffect(() => {
     if (showLibraryPanel) {
+      setIsLoadingLibrary(true);
       if (libraryMode === 'strategies') {
-        fetchSavedStrategies();
+        fetchSavedStrategies().finally(() => setIsLoadingLibrary(false));
       } else {
-        fetchSavedBacktests();
+        fetchSavedBacktests().finally(() => setIsLoadingLibrary(false));
       }
     }
-  }, [showLibraryPanel, libraryMode]); // أضفنا libraryMode
+  }, [showLibraryPanel, libraryMode]);
 
 
   const fetchSavedStrategies = async () => {
@@ -427,15 +430,40 @@ export default function StrategyBuilderPage() {
           .filter((key) => key.startsWith('ind_'))
           .map((key) => key.replace('ind_', ''));
 
-        const equityCurve = processedCandles.map((c: any) => ({
-          value: c.account_balance,
-          timestamp: c.timestamp
-        }));
+        const equityCurve = processedCandles.map((c: any) => {
+          // تحويل القيمة إلى رقم
+          const balance = Number(c.account_balance);
 
-        const drawdownCurve = processedCandles.map((c: any) => ({
-          value: c.current_pnl < 0 ? c.current_pnl : 0,
-          timestamp: c.timestamp
-        }));
+          // التحقق من صحة الرقم (ليس NaN، ليس لانهائياً، رقم صالح)
+          const isValid = !isNaN(balance) && isFinite(balance) && balance !== null;
+
+          // إذا كانت القيمة غير صالحة، نستخدم آخر قيمة صالحة أو 0
+          const value = isValid ? balance : 0;
+
+          return {
+            value,
+            timestamp: c.timestamp
+          };
+        });
+
+        const drawdownCurve = processedCandles.map((c: any) => {
+          // تحويل القيمة إلى رقم
+          const pnl = Number(c.current_pnl);
+
+          // التحقق من صحة الرقم
+          const isValid = !isNaN(pnl) && isFinite(pnl) && pnl !== null;
+
+          // إذا كانت القيمة غير صالحة، نستخدم 0
+          const validPnl = isValid ? pnl : 0;
+
+          // حساب drawdown: سالب فقط إذا كان أقل من 0
+          const value = validPnl < 0 ? validPnl : 0;
+
+          return {
+            value,
+            timestamp: c.timestamp
+          };
+        });
 
         const loadedChartData: ChartDataResponse = {
           backtest_id: data.backtest_id,
@@ -910,6 +938,52 @@ export default function StrategyBuilderPage() {
   };
 
 
+  // إضافة style في نفس الملف للشيمر
+  const shimmerStyle = `
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, 
+    rgba(255,255,255,0) 0%, 
+    rgba(255,255,255,0.3) 50%, 
+    rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+`;
+
+  // إضافة مكون ShimmerItem
+  const ShimmerItem = () => (
+    <div className="group p-3 bg-background border border-border rounded-sm relative overflow-hidden">
+      <div className="shimmer absolute inset-0 z-0"></div>
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-1">
+          <div className="flex-1 pr-2 min-w-0">
+            <div className="h-4 bg-muted rounded mb-2 w-3/4"></div>
+            <div className="h-2 bg-muted rounded w-1/2"></div>
+          </div>
+        </div>
+        <div className="h-6 bg-muted rounded mb-3"></div>
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="flex gap-2">
+            <div className="h-5 w-10 bg-muted rounded"></div>
+            <div className="h-5 w-10 bg-muted rounded"></div>
+          </div>
+          <div className="flex gap-1">
+            <div className="h-6 w-6 bg-muted rounded"></div>
+            <div className="h-6 w-6 bg-muted rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
 
 
@@ -1181,9 +1255,11 @@ export default function StrategyBuilderPage() {
 
 
 
-      {/* --- STRATEGY LIBRARY PANEL (UPDATED) --- */}
       {showLibraryPanel && (
         <div className="fixed right-0 top-11 bottom-0 w-80 sm:w-96 bg-card border-l border-border shadow-2xl z-40 flex flex-col animate-in slide-in-from-right duration-200 ease-out">
+
+          <style>{shimmerStyle}</style>
+
           <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
             <span className="text-xs font-bold text-foreground uppercase tracking-widest">Library</span>
             <button
@@ -1211,13 +1287,20 @@ export default function StrategyBuilderPage() {
             </button>
           </div>
 
-          <ScrollArea className="flex-1 custom-scrollbar">
+          {/* إضافة scroll مخفي مع تأثير الشيمر */}
+          <div className="flex-1 overflow-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="p-3 space-y-2">
-
-              {/* STRATEGIES LIST */}
+              {/* STRATEGIES LIST مع الشيمر */}
               {libraryMode === 'strategies' && (
                 <>
-                  {savedStrategies.length === 0 ? (
+                  {isLoadingLibrary ? (
+                    // عرض الشيمر أثناء التحميل
+                    <div className="space-y-2">
+                      {[...Array(5)].map((_, idx) => (
+                        <ShimmerItem key={idx} />
+                      ))}
+                    </div>
+                  ) : savedStrategies.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                       <FolderOpen className="h-8 w-8 mb-2 opacity-50" />
                       <div className="text-xs font-mono uppercase">No strategies found</div>
@@ -1276,10 +1359,17 @@ export default function StrategyBuilderPage() {
                 </>
               )}
 
-              {/* BACKTESTS LIST */}
+              {/* BACKTESTS LIST مع الشيمر */}
               {libraryMode === 'backtests' && (
                 <>
-                  {savedBacktests.length === 0 ? (
+                  {isLoadingLibrary ? (
+                    // عرض الشيمر أثناء التحميل
+                    <div className="space-y-2">
+                      {[...Array(5)].map((_, idx) => (
+                        <ShimmerItem key={idx} />
+                      ))}
+                    </div>
+                  ) : savedBacktests.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                       <History className="h-8 w-8 mb-2 opacity-50" />
                       <div className="text-xs font-mono uppercase">No backtests found</div>
@@ -1343,18 +1433,14 @@ export default function StrategyBuilderPage() {
                               <Trash2 className="h-3 w-3" />
                             </button>
                           </div>
-
-
-
                         </div>
                       </div>
                     ))
                   )}
                 </>
               )}
-
             </div>
-          </ScrollArea>
+          </div>
         </div>
       )}
 
@@ -1500,7 +1586,7 @@ export default function StrategyBuilderPage() {
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-border">
                       <span className="text-sm text-muted-foreground">Profit Factor</span>
-                      <span className="text-sm font-medium text-foreground">{backtestResponse.summary.profit_factor.toFixed(2)}</span>
+                        <span className="text-sm font-medium text-foreground"> {backtestResponse?.summary?.profit_factor?.toFixed(2) ?? '0.00'}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-border">
                       <span className="text-sm text-muted-foreground">Max Drawdown</span>

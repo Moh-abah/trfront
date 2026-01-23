@@ -1,6 +1,6 @@
 const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://161.97.73.254:8017/ws"
+// const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://127.0.0.1:8000/ws"
 
-// const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://62.169.17.101:8017/ws"
 const ensureCandleContinuity = () => {
     // هذه الدالة تضمن استمرارية الشموع عند الاتصال
     console.log("[v0] 🔗 Ensuring candle continuity...")

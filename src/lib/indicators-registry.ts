@@ -296,70 +296,36 @@ export const INDICATORS_REGISTRY: IndicatorMetadata[] = [
         default_params: {},
         required_columns: ['close', 'volume']
     },
+
     {
         name: 'volume_climax',
         display_name: 'Volume Climax',
-        description: 'تحديد شموع ذروة الفوليوم',
+        description: 'تحديد شموع ذروة الفوليوم مع تصنيفات متعددة',
         category: 'volume',
-        default_params: { period: 20, std_mult: 2 },
-        required_columns: ['high', 'low', 'volume']
-    },
-    {
-        name: 'vol_climax_30s',
-        display_name: 'Volume Climax 30s',
-        description: 'Volume Climax - فريم 30 ثانية',
-        category: 'volume',
-        default_params: { period: 20, std_mult: 2 },
-        required_columns: ['high', 'low', 'volume'],
-        timeframe: '30s'
-    },
-    {
-        name: 'vol_climax_1m',
-        display_name: 'Volume Climax 1m',
-        description: 'Volume Climax - فريم دقيقة',
-        category: 'volume',
-        default_params: { period: 20, std_mult: 2 },
-        required_columns: ['high', 'low', 'volume'],
-        timeframe: '1m'
-    },
-    {
-        name: 'vol_climax_5m',
-        display_name: 'Volume Climax 5m',
-        description: 'Volume Climax - فريم 5 دقائق',
-        category: 'volume',
-        default_params: { period: 20, std_mult: 2 },
-        required_columns: ['high', 'low', 'volume'],
-        timeframe: '5m'
-    },
-    {
-        name: 'vol_climax_15m',
-        display_name: 'Volume Climax 15m',
-        description: 'Volume Climax - فريم 15 دقيقة',
-        category: 'volume',
-        default_params: { period: 20, std_mult: 2 },
-        required_columns: ['high', 'low', 'volume'],
-        timeframe: '15m'
-    },
-    {
-        name: 'vol_climax_1h',
-        display_name: 'Volume Climax 1H',
-        description: 'Volume Climax - فريم ساعة',
-        category: 'volume',
-        default_params: { period: 20, std_mult: 2 },
+        default_params: {
+            period: 20,
+            ratio_ultra: 2.2,
+            ratio_very_high: 1.8,
+            ratio_high: 1.2,
+            ratio_normal: 0.8,
+            ratio_low: 0.4
+        },
         required_columns: ['high', 'low', 'volume'],
         timeframe: '1h'
     },
+ 
 
-    // Support & Resistance Indicators
 
     {
         name: 'smc_order_block',
         display_name: 'SMC Order Block',
         description: 'تحديد بلوكات الأوردر بناءً على سوينغ',
         category: 'support_resistance',
-        default_params: { swing_length: 10, close_mitigation: true },
-   
+        default_params: { swing_length: 10, close_mitigation: true, show_last_n_blocks: 2, lookback_period:200 },
+        timeframe: '1h'
     },
+
+ 
 
     {
         name: 'supply_demand',

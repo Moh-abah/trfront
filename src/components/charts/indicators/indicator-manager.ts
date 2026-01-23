@@ -1,4 +1,4 @@
-//  @ts-nocheck
+//@ts-nocheck
 
 
 // indicators/indicator-manager.ts
@@ -13,7 +13,7 @@ import { EMAIndicator } from "./ema-indicator";
 import { SMAIndicator } from "./sma-indicator";
 import { OBVIndicator } from "./obv-indicator";
 import { SupplyDemandIndicator } from "./supply-demand";
-import { VolumeClimaxIndicator } from "./volume-climax";
+import { VolumeClimaxIndicator } from "./volume-climax-indicator";
 import { HarmonicIndicator } from "./harmonic-indicator";
 import { HVIVIndicator } from "./hv-iv-indicator";
 import { SMCOrderBlockIndicator } from "./smc-order-block-indicator";
@@ -217,6 +217,9 @@ export class IndicatorManager {
     }
 
  
+
+
+    
     private handleSMA(id: string, data: any): void {
         console.log(`[Manager] 📈 ========== HANDLE SMA START ==========`);
 
@@ -277,6 +280,8 @@ export class IndicatorManager {
 
         console.log(`[Manager] 📈 ========== HANDLE SMA END ==========`);
     }
+
+
 
     private handleEMA(id: string, data: any): void {
         console.log(`[Manager] 📉 ========== HANDLE EMA START ==========`);
@@ -506,107 +511,106 @@ export class IndicatorManager {
         });
     }
 
+
+
+
+
     private handleVolumeClimax(id: string, data: any): void {
         console.log(`[Manager] 🔴 ========== HANDLE VOLUME CLIMAX START ==========`);
 
         try {
-            let climaxData: any = null;
+            // 🔍 خطوة تشخيصية مهمة: طباعة محتوى metadata بالكامل لنعرف ماذا يوجد بداخله
+            console.log(`[Manager] 🔍 DEBUG: data.meta keys:`, data.meta ? Object.keys(data.meta) : 'NO METADATA');
+            console.log(`[Manager] 🔍 DEBUG: data.indicators_results exists:`, !!data.indicators_results);
+
+            let renderData: any = null;
             let source = 'unknown';
 
-            // 🔥 البحث 1: في data.metadata مباشرة (هذا هو الحل!)
-            if (data.metadata?.climax_points && Array.isArray(data.metadata.climax_points)) {
-                climaxData = data;
-                source = 'direct metadata (FIX)';
-                console.log(`[Manager] ✅ Found in direct metadata (FIX)`);
-            }
-            // البحث 2: في data.indicators_results.volume_climax.metadata
-            else if (data.indicators_results?.volume_climax?.metadata?.climax_points) {
-                climaxData = {
-                    ...data.indicators_results.volume_climax,
-                    metadata: data.indicators_results.volume_climax.metadata
-                };
-                source = 'indicators_results.metadata';
-                console.log(`[Manager] ✅ Found in indicators_results.metadata`);
-            }
-            // البحث 3: في data.indicators.volume_climax.metadata
-            else if (data.indicators?.volume_climax?.metadata?.climax_points) {
-                climaxData = {
-                    ...data.indicators.volume_climax,
-                    metadata: data.indicators.volume_climax.metadata
-                };
-                source = 'indicators.metadata';
-                console.log(`[Manager] ✅ Found in indicators.metadata`);
-            }
-            // البحث 4: في direct data بدون climax points (سيتم معالجته لاحقاً)
-            else if (data.indicator === 'volume_climax' || data.name === 'volume_climax' || data.name === 'climax') {
-                climaxData = {
-                    values: data.values || [],
-                    metadata: data.metadata || {},
-                    signals: data.signals,
-                    name: data.name || 'Volume Climax'
-                };
-                source = 'direct data (no climax yet)';
-                console.log(`[Manager] ✅ Found in direct data without climax points (will be updated later)`);
+            // === محاولة 1: البحث المباشر في data.metadata.render ===
+            if (data.meta?.render) {
+                renderData = data.meta.render;
+                source = 'data.metadata.render (Direct)';
             }
 
-            if (!climaxData) {
-                console.warn(`[Manager] ⚠️ No Volume Climax data found`);
-                console.log(`[Manager] 🔍 Data structure:`, {
-                    hasMetadata: !!data.metadata,
-                    metadataKeys: data.metadata ? Object.keys(data.metadata) : [],
-                    hasIndicatorsResults: !!data.indicators_results,
-                    indicatorsResultsKeys: data.indicators_results ? Object.keys(data.indicators_results) : [],
-                    hasIndicators: !!data.indicators,
-                    indicatorsKeys: data.indicators ? Object.keys(data.indicators) : [],
-                    valuesLength: data.values?.length
-                });
+            // === محاولة 2: البحث في data.indicators_results.volume_climax.metadata.render ===
+            // (في حال كانت data هي الرسالة الكاملة)
+            else if (data.indicators_results?.volume_climax?.meta?.render) {
+                renderData = data.indicators_results.volume_climax.meta.render;
+                source = 'data.indicators_results.volume_climax.meta.render';
+            }
+
+            // === محاولة 3: البحث في data.volume_climax.metadata.render ===
+            // (في حال كانت data هي كائن indicators_results)
+            else if (data.volume_climax?.meta?.render) {
+                renderData = data.volume_climax.meta.render;
+                source = 'data.volume_climax.metadata.render';
+            }
+
+            // === محاولة 4: البحث المباشر في climax_points و volume_bars داخل metadata ===
+            // (في حال لم يستخدم الباك إند مفتاح render)
+            else if (data.meta?.climax_points && data.meta?.volume_bars) {
+                renderData = {
+                    climax_points: data.meta.climax_points,
+                    volume_bars: data.meta.volume_bars
+                };
+                source = 'data.meta (Direct Keys)';
+            }
+
+            // === التحقق النهائي ===
+            if (!renderData) {
+                console.warn(`[Manager] ⚠️ No render data found for Volume Climax after all checks.`);
+                console.warn(`[Manager] 📦 Full data object structure:`, data);
+                // نقوم بالعودة لتجنب إنشاء مؤشر بدون بيانات
                 return;
             }
 
-            console.log(`[Manager] 🔴 Preparing from source: ${source}`);
-            console.log(`[Manager] 🔴 Metadata:`, climaxData.metadata);
-            console.log(`[Manager] 🔴 Has climax_points:`, !!climaxData.metadata?.climax_points);
-            console.log(`[Manager] 🔴 Climax points length:`, climaxData.metadata?.climax_points?.length || 0);
+            console.log(`[Manager] 🔅 SUCCESS: Found render data from source: ${source}`);
+            console.log(`[Manager] 🔅 Climax Points Count:`, renderData.climax_points?.length);
+            console.log(`[Manager] 🔅 Volume Bars Count:`, renderData.volume_bars?.length);
 
             const config: IndicatorConfig = {
                 id,
-                name: climaxData.name || 'Volume Climax',
+                name: 'Volume Climax',
                 type: 'overlay',
                 overlay: true,
-                priceScaleId: 'volume',
+                priceScaleId: '',
                 color: '#FF0000'
             };
 
             let indicator: VolumeClimaxIndicator;
+
             if (this.indicators.has(id)) {
                 indicator = this.indicators.get(id) as VolumeClimaxIndicator;
                 console.log(`[Manager] 🔄 Updating existing Volume Climax indicator`);
             } else {
-                // 🔥 لا نمرير candleSeries لأن المؤشر ينشئ Line series خاصة
-                indicator = new VolumeClimaxIndicator(this.chart, config);
+                if (!this.candleSeries) {
+                    console.error('[Manager] ❌ Candle series is missing');
+                    return;
+                }
+                indicator = new VolumeClimaxIndicator(this.chart, config, this.candleSeries);
                 indicator.createSeries();
                 this.indicators.set(id, indicator);
                 console.log(`[Manager] 🆕 Created new Volume Climax indicator`);
             }
 
             const indicatorData: IndicatorData = {
-                values: climaxData.values || [],
-                metadata: climaxData.metadata || {},
-                signals: climaxData.signals,
-                liveTime: data.liveTime || data.live_candle?.time
+                values: data.values || [],
+                meta: {
+                    render: renderData
+                },
+                signals: data.signals,
+                liveTime: data.liveTime
             };
-
-            console.log(`[Manager] 🔴 Updating Volume Climax with liveTime:`, indicatorData.liveTime);
 
             indicator.updateData(indicatorData);
             console.log(`[Manager] ✅ Volume Climax "${id}" processed successfully`);
+
         } catch (error) {
             console.error(`[Manager] 🔴 ❌ Failed to handle Volume Climax ${id}:`, error);
         }
 
         console.log(`[Manager] 🔴 ========== HANDLE VOLUME CLIMAX END ==========`);
     }
-
 
 
 

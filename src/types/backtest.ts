@@ -18,19 +18,20 @@ export type Operator =
     | '=='
     | '!='
     | 'cross_above'
-    | 'cross_below';
+    | 'cross_below'
+    | 'touches';
 
 export type PositionSide = 'long' | 'short' | 'both';
 
 export type ExitType = 'stop_loss' | 'take_profit' | 'trailing_stop' | 'signal_exit';
 export type FilterAction = 'allow' | 'block' | 'delay';
 export type IndicatorCategory = 'trend' | 'momentum' | 'volatility' | 'volume' | 'support_resistance' | 'pattern_recognition';
-
+export type IndicatorParamValue = number | boolean | string;
 export interface IndicatorConfig {
     id?: string;
     name: string;
     type: IndicatorCategory;
-    params: Record<string, number | string>;
+    params: Record<string, IndicatorParamValue>;
     enabled: boolean;
     timeframe: string;
 }
@@ -40,7 +41,8 @@ export interface IndicatorMetadata {
     display_name: string;
     description: string;
     category: IndicatorCategory;
-    default_params: Record<string, number>;
+ 
+    default_params: Record<string, IndicatorParamValue>;
     required_columns: string[];
     timeframe?: string;
 }
@@ -82,6 +84,7 @@ export interface FilterRule {
     condition: RuleCondition;
     action: FilterAction;
     enabled: boolean;
+    metadata?: Record<string, any>;
 }
 
 export interface RiskManagement {

@@ -35,7 +35,9 @@ export function RuleBuilder({ entryRules, exitRules, filterRules, onEntryRulesCh
     onEntryRulesChange([...entryRules, newRule]);
     setExpandedRuleId(`entry-${entryRules.length}`);
   };
+  
 
+  
   const removeEntryRule = (index: number) => {
     onEntryRulesChange(entryRules.filter((_, i) => i !== index));
   };
@@ -63,7 +65,18 @@ export function RuleBuilder({ entryRules, exitRules, filterRules, onEntryRulesCh
   };
 
   const addFilterRule = () => {
-    const newRule: FilterRule = { name: `فلتر ${filterRules.length + 1}`, condition: { type: 'indicator_value', operator: '!=', left_value: 'indicator:supply_demand', right_value: 0 }, action: 'block', enabled: true };
+    const newRule: FilterRule = {
+      name: `فلتر ${filterRules.length + 1}`,
+      condition: {
+        type: 'indicator_value',
+        operator: '>', // ← أفضل من '!='
+        left_value: 'indicator:sma_fast',
+        right_value: 'indicator:sma_slow'
+      },
+      action: 'allow', // ✅
+      enabled: true,
+      metadata: { allowed_position: 'long' } // ✅ الآن متوافق
+    };
     onFilterRulesChange([...filterRules, newRule]);
     setExpandedRuleId(`filter-${filterRules.length}`);
   };
@@ -219,23 +232,91 @@ export function RuleBuilder({ entryRules, exitRules, filterRules, onEntryRulesCh
                   />
                 </div>
               )}
+           
+
               {isFilter && (
-                <div>
-                  <Label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">Action</Label>
-                  <Select
-                    value={(rule as FilterRule).action}
-                    onValueChange={(v) => updateHandler({ action: v as FilterAction })}
-                  >
-                    <SelectTrigger className="h-7 bg-background border-border text-[10px] text-foreground focus:ring-0 px-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border text-[10px] p-1">
-                      <SelectItem value="allow">Allow</SelectItem>
-                      <SelectItem value="block">Block</SelectItem>
-                      <SelectItem value="delay">Delay</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <>
+                
+                  <div>
+                    <Label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">Action</Label>
+                    <Select
+                      value={(rule as FilterRule).action}
+                      onValueChange={(v) => {
+                        const newAction = v as FilterAction;
+                        let newMetadata = { ...(rule as FilterRule).metadata };
+
+                        // عند تغيير الـ action، نعيد ضبط metadata
+                        if (newAction === 'allow') {
+                          newMetadata = { allowed_position: newMetadata.allowed_position || 'long' };
+                        } else if (newAction === 'block') {
+                          newMetadata = { blocked_position: newMetadata.blocked_position || 'long' };
+                        } else {
+                          newMetadata = {};
+                        }
+
+                        updateHandler({ action: newAction, metadata: newMetadata });
+                      }}
+                    >
+                      <SelectTrigger className="h-7 bg-background border-border text-[10px] text-foreground focus:ring-0 px-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border text-[10px] p-1">
+                        <SelectItem value="allow">Allow (يسمح فقط)</SelectItem>
+                        <SelectItem value="block">Block (يمنع)</SelectItem>
+                        <SelectItem value="delay">Delay (يؤجل)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* قسم Position بناءً على الـ Action */}
+                  {(rule as FilterRule).action === 'allow' && (
+                    <div>
+                      <Label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">Allowed Position</Label>
+                      <Select
+                        value={(rule as FilterRule).metadata?.allowed_position || 'long'}
+                        onValueChange={(value) => {
+                          const newMetadata = { ...(rule as FilterRule).metadata, allowed_position: value };
+                          updateHandler({ metadata: newMetadata });
+                        }}
+                      >
+                        <SelectTrigger className="h-7 bg-background border-border text-[10px] text-foreground focus:ring-0 px-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border text-[10px] p-1">
+                          <SelectItem value="long" className="text-green-500">Long Only (شراء فقط)</SelectItem>
+                          <SelectItem value="short" className="text-red-500">Short Only (بيع فقط)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[8px] text-muted-foreground mt-1">
+                        فقط هذا الجانب مسموح عندما يكون الشرط صحيحاً
+                      </p>
+                    </div>
+                  )}
+
+                  {(rule as FilterRule).action === 'block' && (
+                    <div>
+                      <Label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">Blocked Position</Label>
+                      <Select
+                        value={(rule as FilterRule).metadata?.blocked_position || 'long'}
+                        onValueChange={(value) => {
+                          const newMetadata = { ...(rule as FilterRule).metadata, blocked_position: value };
+                          updateHandler({ metadata: newMetadata });
+                        }}
+                      >
+                        <SelectTrigger className="h-7 bg-background border-border text-[10px] text-foreground focus:ring-0 px-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border text-[10px] p-1">
+                          <SelectItem value="long" className="text-red-500">Block Long (يمنع الشراء)</SelectItem>
+                          <SelectItem value="short" className="text-red-500">Block Short (يمنع البيع)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[8px] text-muted-foreground mt-1">
+                        هذا الجانب ممنوع عندما يكون الشرط صحيحاً
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
             <div className="space-y-2">
