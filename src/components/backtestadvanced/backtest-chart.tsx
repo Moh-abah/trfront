@@ -235,7 +235,7 @@ export function BacktestChart({
   const [showTrades, setShowTrades] = useState(true);
   const [showCrosshairData, setShowCrosshairData] = useState(true);
   let markersPlugin: ISeriesMarkersPluginApi<Time> | null = null;
-
+  const [volumeClimaxInitialized, setVolumeClimaxInitialized] = useState(false);
 
   let resizeObserverRef: ResizeObserver | null = null;
   const [activeTab, setActiveTab] = useState<'chart' | 'performance' | 'trades' | 'indicators'>('chart');
@@ -380,8 +380,10 @@ export function BacktestChart({
         if (typeof volumeClimaxRef.current.destroy === 'function') {
           volumeClimaxRef.current.destroy();
         }
-        volumeClimaxRef.current = null;
+        // volumeClimaxRef.current = null;
       }
+      setVolumeClimaxInitialized(false);
+
     
     }
   }, []);
@@ -415,25 +417,90 @@ export function BacktestChart({
     const volumeBars = [];
 
     candles.forEach((candle: any) => {
-      // التحقق من وجود بيانات Volume Bar
-      if (candle.volume_bar && typeof candle.volume_bar === 'object') {
-        volumeBars.push({
-          time: candle.volume_bar.time, // استخدام الوقت من API
-          value: candle.volume_bar.value,
-          ratio: candle.volume_bar.ratio,
-          color: candle.volume_bar.color
+      // 🔍 البحث عن بيانات volume_climax في الهيكل الجديد
+
+      // 1. جمع جميع بيانات VC لهذه الشمعة
+      const vcData: Record<string, any> = {};
+      let hasVolumeBarData = false;
+      let hasClimaxData = false;
+
+      Object.keys(candle).forEach(key => {
+        if (key.startsWith('ind_vc') && key.includes(':')) {
+          const [indicatorKey, property] = key.split(':');
+          const indicatorId = indicatorKey.replace('ind_', '');
+
+          // تهيئة كائن المؤشر إذا لم يكن موجوداً
+          if (!vcData[indicatorId]) {
+            vcData[indicatorId] = {
+              id: indicatorId,
+              time: candle.timestamp
+            };
+          }
+
+          // حفظ الخاصية
+          vcData[indicatorId][property] = candle[key];
+
+          // تحديد نوع البيانات
+          if (property === 'ind_volume_bar_time') hasVolumeBarData = true;
+          if (property.includes('streak')) hasClimaxData = true;
+        }
+      });
+
+      // 2. إنشاء volume_bar من البيانات المجمعة
+      if (hasVolumeBarData) {
+        Object.values(vcData).forEach((indicator: any) => {
+          if (indicator.ind_volume_bar_time !== undefined) {
+            volumeBars.push({
+              time: indicator.ind_volume_bar_time,
+              value: indicator.ind_volume_bar_value ,
+              ratio: indicator.ind_volume_bar_ratio ,
+              color: indicator.ind_volume_bar_color
+            });
+          }
         });
       }
 
-      // التحقق من وجود بيانات Climax Point
-      if (candle.climax_point && typeof candle.climax_point === 'object') {
-        climaxPoints.push({
-          time: candle.climax_point.time, // استخدام الوقت من API
-          high: candle.climax_point.high,
-          low: candle.climax_point.low,
-          ratio: candle.climax_point.ratio,
-          color: candle.climax_point.color
+      // 3. إنشاء climax_point من البيانات المجمعة
+      if (hasClimaxData) {
+        Object.values(vcData).forEach((indicator: any) => {
+          // إنشاء climax_point فقط إذا كان هناك streak فعال
+          const hasActiveStreak = indicator.vc_blue_streak > 0 ||
+            indicator.vc_red_streak > 0 ||
+            indicator.green_candle_streak > 0 ||
+            indicator.red_candle_streak > 0;
+
+          if (hasActiveStreak && candle.high && candle.low) {
+            climaxPoints.push({
+              time: indicator.ind_volume_bar_time || candle.timestamp,
+              high: candle.high,
+              low: candle.low,
+              ratio: indicator.ind_volume_bar_ratio ,
+              color: indicator.ind_volume_bar_color 
+            });
+          }
         });
+      }
+
+      // 🔍 النسخة الاحتياطية: إذا كانت البيانات تأتي بالشكل القديم
+      if (!hasVolumeBarData && !hasClimaxData) {
+        if (candle.volume_bar && typeof candle.volume_bar === 'object') {
+          volumeBars.push({
+            time: candle.volume_bar.time,
+            value: candle.volume_bar.value,
+            ratio: candle.volume_bar.ratio,
+            color: candle.volume_bar.color
+          });
+        }
+
+        if (candle.climax_point && typeof candle.climax_point === 'object') {
+          climaxPoints.push({
+            time: candle.climax_point.time,
+            high: candle.climax_point.high,
+            low: candle.climax_point.low,
+            ratio: candle.climax_point.ratio,
+            color: candle.climax_point.color
+          });
+        }
       }
     });
 
@@ -447,7 +514,6 @@ export function BacktestChart({
       }
     };
   }, [candles, showVolumeClimax]);
-
 
   // ✅ Effect موحد لتحديث بيانات Volume Climax
   useEffect(() => {
@@ -1798,8 +1864,9 @@ export function BacktestChart({
                       <TableCell className={`text-[11px] font-mono text-right ${trade.pnl && trade.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {trade.pnl !== undefined ? formatNumber(trade.pnl) : '-'}
                       </TableCell>
-                      <TableCell className="text-[10px] text-gray-600 font-mono w-32 whitespace-nowrap">
-                        {new Date(trade.timestamp).toLocaleTimeString()}
+                      <TableCell className="text-[10px] text-gray-600 font-mono w-32">
+                        <div>{new Date(trade.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                        <div>{new Date(trade.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -308,10 +308,26 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
 
 
+    // أضف مع rest of states
+    const [crosshairData, setCrosshairData] = useState<{
+        price?: number;
+        time?: string;
+        candle?: any;
+    }>({});
+
+    const [showCrosshairData, setShowCrosshairData] = useState(true);
 
 
-
-
+    // أضف هذه الدالة داخل المكون
+    const formatNumber = (num: number | undefined, decimals: number = 2): string => {
+        if (num === undefined || num === null) {
+            return '0.00';
+        }
+        return num.toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    };
 
     // 🔥 دالة للتعامل مع toggle visibility
     const handleToggleIndicator = useCallback((indicatorId: string, isVisible: boolean) => {
@@ -496,31 +512,47 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
                 allowShiftVisibleRangeOnWhitespaceReplacement: true,
                 tickMarkFormatter: (time: UTCTimestamp) => {
                     const date = new Date(time * 1000);
-                    const day = date.getUTCDate().toString().padStart(2, '0');
-                    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-                    const year = date.getUTCFullYear();
-                    const hours = date.getUTCHours().toString().padStart(2, '0');
-                    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                    const seconds = date.getUTCSeconds().toString().padStart(2, '0');
 
-                    // تنسيق ذكي حسب الفريم الزمني
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+         
+                    const monthName = monthNames[date.getMonth()];
+                    const dayOfMonth = date.getDate().toString().padStart(2, '0');
+                    const dayName = dayNames[date.getDay()];
+
+                    // دالة التنسيق الإنجليزية 12 ساعة
+                    const formatTime12 = (withSeconds: boolean) => {
+                        return date.toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            second: withSeconds ? '2-digit' : undefined,
+                            hour12: true
+                        });
+                    };
+
+                    const timeStr = formatTime12(false);      // مثال: 3:30 PM
+                    const timeStrWithSec = formatTime12(true); // مثال: 3:30:45 PM
+
+                    // بناء الصيغ النهائية
+                    const baseFormat = `${monthName} ${dayOfMonth} ${dayName} ${timeStr}`;
+                    const fullFormat = `${monthName} ${dayOfMonth} ${dayName} ${timeStrWithSec}`;
+
+                    // المنطق الشرطي بناءً على الفريم (Timeframe)
                     if (timeframe.endsWith('s')) {
-                        return `${hours}:${minutes}:${seconds}`;
+                        return fullFormat;
                     }
-                    else if (timeframe.endsWith('m')) {
-                        const mins = parseInt(timeframe);
-                        return mins >= 30 ? `${day}/${month} ${hours}:${minutes}` : `${hours}:${minutes}`;
-                    }
-                    else if (timeframe.endsWith('h')) {
-                        return `${day}/${month} ${hours}:${minutes}`;
+                    else if (timeframe.endsWith('m') || timeframe.endsWith('h')) {
+                        return baseFormat;
                     }
                     else if (timeframe.endsWith('d') || timeframe.endsWith('w')) {
-                        return `${day}/${month}`;
+                        return `${monthName} ${dayOfMonth} ${dayName}`;
                     }
                     else if (timeframe.endsWith('M')) {
-                        return `${month}/${year}`;
+                        return `${monthName} ${date.getFullYear()}`;
                     }
-                    return `${hours}:${minutes}`;
+
+                    return baseFormat;
                 }
             },
             rightPriceScale: {
@@ -546,17 +578,14 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
             localization: {
                 timeFormatter: (time: UTCTimestamp) => {
                     const date = new Date(time * 1000);
-                    const hours = date.getUTCHours().toString().padStart(2, '0');
-                    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
-                    const seconds = date.getUTCSeconds().toString().padStart(2, '0');
-                    const day = date.getUTCDate();
-                    const month = date.getUTCMonth() + 1;
-                    const year = date.getUTCFullYear().toString().slice(-2);
-                    if (timeframe === "1s" || timeframe === "1m") return `${hours}:${minutes}:${seconds}`;
-                    if (timeframe === "1h" || timeframe === "4h") return `${hours}:${minutes}`;
-                    return `${hours}:${minutes}`;
+                    return date.toLocaleTimeString('en - US', { // استخدم 'en-US' إذا أردت AM/PM بالإنجليزية
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: timeframe.endsWith('s') ? '2-digit' : undefined,
+                        hour12: true, // تفعيل نظام 12 ساعة
+                    });
                 },
-                dateFormatter: (time: UTCTimestamp) => new Date(time * 1000).toLocaleDateString(),
+                dateFormatter: (time: UTCTimestamp) => new Date(time * 1000).toLocaleDateString('en - US'),
             },
         })
 
@@ -606,10 +635,94 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
             })
         }
 
-        if (onCrosshairMove) {
-            chart.subscribeCrosshairMove(onCrosshairMove)
-        }
+        // واستبدله بـ:
+        chart.subscribeCrosshairMove((param: MouseEventParams) => {
+            onCrosshairMove?.(param);
 
+            // 1. التحقق من وجود بيانات
+            if (!param.time || !param.point) {
+                setCrosshairData({});
+                return;
+            }
+
+            // 2. الحصول على بيانات الشمعة مباشرة (Direct Map Access)
+            const candlestickSeries = candlestickSeriesRef.current;
+            if (!candlestickSeries) return;
+
+
+            const volumeSeries = volumeSeriesRef.current;
+            const volumeData = volumeSeries ? param.seriesData.get(volumeSeries) as any : null;
+
+
+            // في v5.1 نستخدم seriesData.get() وهو يعيد كائن البيانات كاملاً
+            const data = param.seriesData.get(candlestickSeries);
+
+            // التحقق من أن البيانات هي شمعة (OHLC)
+            if (!data || !('close' in data)) {
+                setCrosshairData({});
+                return;
+            }
+
+            // 3. معالجة الوقت بذكاء (تجاوز خطأ الـ BusinessDay و string)
+            let timestamp: number;
+            const time = param.time;
+
+            if (typeof time === 'number') {
+                timestamp = time;
+            } else if (typeof time === 'string') {
+                timestamp = new Date(time).getTime() / 1000;
+            } else {
+                // هنا TypeScript سيعرف أن time هو BusinessDay تلقائياً
+                timestamp = Date.UTC(time.year, time.month - 1, time.day) / 1000;
+            }
+
+            // 4. تنسيق التاريخ (Readable Format)
+            const date = new Date(timestamp * 1000);
+            const timeStr = date.toLocaleString('en-GB', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: timeframe.endsWith('s') ? '2-digit' : undefined,
+                hour12: true,
+            });
+
+
+            const formatVolume = (vol: number) => {
+                if (vol >= 1000000) return (vol / 1000000).toFixed(2) + 'M';
+                if (vol >= 1000) return (vol / 1000).toFixed(2) + 'K';
+                return vol.toFixed(0);
+            };
+
+
+            // 5. الحصول على قيم المؤشرات تلقائياً (Indicators)
+            const indicators: Record<string, any> = {};
+            if (indicatorSeriesRefs.current) {
+                Object.entries(indicatorSeriesRefs.current).forEach(([key, series]) => {
+                    const indicatorData = param.seriesData.get(series as any);
+                    if (indicatorData) {
+                        // إذا كان مؤشر خطي سيحتوي على 'value'
+                        indicators[key] = (indicatorData as any).value ?? indicatorData;
+                    }
+                });
+            }
+
+            // تحديث الـ State ببيانات نظيفة وجاهزة
+            setCrosshairData({
+                time: timeStr,
+                price: data.close,
+                candle: data, // يحتوي على {open, high, low, close}
+                indicators: indicators,
+                volume: volumeData ? {
+                    raw: volumeData.value, // القيمة الخام (رقم)
+                    formatted: formatVolume(volumeData.value) // القيمة المنسقة (نص)
+                } : null
+
+                
+            });
+        });
+        
         candlestickSeriesRef.current = candlestickSeries;
         candleSeriesRef.current = candlestickSeries;
         currentSeriesRef.current = candlestickSeries;
@@ -698,7 +811,61 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
             candleSeriesRef.current = null;
             setIsInitializing(true);
         }
-    }, [theme, showVolume, height, onChartReady, onCrosshairMove, timeframe])
+    }, [theme, height, onChartReady, onCrosshairMove, timeframe])
+
+    
+   
+
+    // ✅ منطق إظهار وإخفاء الفوليوم ديناميكياً
+    useEffect(() => {
+        // إذا لم يكن الشارت جاهزاً لا نفعل شيئاً
+        if (!chartRef.current || !isChartReady) return;
+
+        if (showVolume) {
+            // الحالة: تفعيل الفوليوم
+            if (!volumeSeriesRef.current) {
+                // إنشاء سلسلة الفوليوم إذا لم تكن موجودة
+                const volumeSeries = chartRef.current.addSeries(HistogramSeries, {
+                    priceFormat: { type: "volume" },
+                    priceScaleId: "volume",
+                    color: "rgba(38, 166, 154, 0.5)",
+                    priceLineVisible: false,
+                    lastValueVisible: false,
+                });
+
+                volumeSeriesRef.current = volumeSeries;
+
+                // ضبط إعدادات المقياس
+                chartRef.current.priceScale("volume").applyOptions({
+                    scaleMargins: {
+                        top: 0.8,
+                        bottom: 0,
+                    },
+                });
+
+                // ملء الفوليوم بالبيانات التاريخية فور إضافته
+                if (candles && candles.length > 0) {
+                    const volumeData = candles.map(c => {
+                        const time = toUTCTimestamp(c.time);
+                        const value = Number(c.volume || 0);
+                        const color = c.close >= c.open
+                            ? "rgba(38, 166, 154, 0.5)"
+                            : "rgba(239, 83, 80, 0.5)";
+                        return { time, value, color };
+                    });
+                    volumeSeries.setData(volumeData);
+                }
+            }
+        } else {
+            // الحالة: إخفاء الفوليوم
+            if (volumeSeriesRef.current) {
+                // إزالة السلسلة من الشارت
+                chartRef.current.removeSeries(volumeSeriesRef.current);
+                volumeSeriesRef.current = null;
+            }
+        }
+    }, [showVolume, isChartReady, candles]);
+
 
 
     // تحديث حالة التحميل بناءً على candles
@@ -732,6 +899,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
                 high: Number(c.high),
                 low: Number(c.low),
                 close: Number(c.close),
+                volume: Number(c.volume  || 0),
             }))
             .sort((a, b) => (a.time as number) - (b.time as number))
 
@@ -1060,7 +1228,74 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
                     </div>
                 </div>
 
+
+
+
+                {/* ========================================= */}
+                {/* عرض بيانات المؤشر عند التحريك         */}
+                {/* ========================================= */}
+                {showCrosshairData && crosshairData.candle && (
+                    <div className="absolute top-4 left-4 bg-[#131722]/90 backdrop-blur-md border border-[#2A2E39] rounded-lg shadow-2xl p-3 min-w-[220px] pointer-events-none z-30 transition-all">
+                        {/* الوقت والنسبة المئوية */}
+                        <div className="flex items-center justify-between mb-2 border-b border-gray-700/50 pb-2">
+                            <span className="text-[11px] font-mono text-gray-400">{crosshairData.time}</span>
+                            {crosshairData.candle.open && crosshairData.candle.close && (
+                                <span className={`text-[11px] font-bold ${(crosshairData.candle.close - crosshairData.candle.open) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    {(((crosshairData.candle.close - crosshairData.candle.open) / crosshairData.candle.open) * 100).toFixed(2)}%
+                                </span>
+                            )}
+                        </div>
+
+                        {/* شبكة بيانات OHLC */}
+                        <div className="grid grid-cols-2 gap-y-1.5 gap-x-4 text-[11px]">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">O</span>
+                                <span className="text-gray-200 font-mono">{formatNumber(crosshairData.candle.open)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">H</span>
+                                <span className="text-gray-200 font-mono">{formatNumber(crosshairData.candle.high)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">L</span>
+                                <span className="text-gray-200 font-mono">{formatNumber(crosshairData.candle.low)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">C</span>
+                                <span className={`font-mono ${(crosshairData.candle.close >= crosshairData.candle.open) ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    {formatNumber(crosshairData.candle.close)}
+                                </span>
+                            </div>
+                                {/* 
+                           عرض الفوليوم المنسق (K, M) *
+                            {crosshairData.volume && (
+                                <div className="col-span-2 flex justify-between mt-1 pt-1 border-t border-gray-800/50">
+                                    <span className="text-gray-500">Vol</span>
+                                    <span className="text-gray-200 font-mono">{crosshairData.volume.formatted}</span>
+                                </div>
+                            )} */}
+                        </div>
+
+                        {/* عرض المؤشرات ديناميكياً (RSI, MACD, etc.) */}
+                        {crosshairData.indicators && Object.keys(crosshairData.indicators).length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-gray-800/50 space-y-1">
+                                {Object.entries(crosshairData.indicators).map(([name, value]) => (
+                                    <div key={name} className="flex justify-between text-[11px]">
+                                        <span className="text-blue-400 uppercase font-semibold">{name}</span>
+                                        <span className="text-gray-200 font-mono">
+                                            {typeof value === 'number' ? value.toFixed(2) : '-'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+                
+
             </div>
+
+            
         </div>
     )
 }

@@ -16,6 +16,9 @@ export interface IndicatorSeriesPoint {
     value: number
 }
 
+
+
+
 export interface IndicatorData {
     id: string
     name: string
@@ -966,7 +969,22 @@ export const useChartStore = create<ChartState>((set, get) => ({
     },
 
 
+    // في store/chart.store.ts أضف هذه الوظيفة:
+    resetForNewTimeframe: () => {
+        set({
+            candles: [],
+            indicators: {},
+            liveCandle: null,
+            previousLiveCandle: null,
+            currentPrice: null,
+            isInitialized: false,
+            isLoading: true,
+            error: null,
+            // نحتفظ على symbol و timeframe و market لأنها ستتغير لاحقاً
+        });
+    },
 
+    
     removeIndicator: (indicatorId: string) => {
         set((state) => {
             const copy = { ...state.indicators };

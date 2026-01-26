@@ -6,7 +6,9 @@
 import { useEffect, useCallback, useState, useRef } from "react"
 import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { toast } from "react-hot-toast"
-import { Settings, Share2, Eye, EyeOff, TrendingUp, TrendingDown, Maximize2, Activity, LayoutTemplate, X } from "lucide-react"
+
+import { Settings, Share2, Eye, EyeOff, TrendingUp, TrendingDown, Maximize2, Activity, LayoutTemplate, X, BarChart3 } from "lucide-react";
+// أضفنا BarChart3
 import { ChevronDown } from "lucide-react";
 import { MarketOverviewDropdown } from "@/components/market-overview/MarketOverviewDropdown";
 
@@ -69,7 +71,7 @@ export default function ChartPage() {
    
     const [drawingMode, setDrawingMode] = useState<string>("cursor") 
     const [showMarketOverview, setShowMarketOverview] = useState(false);
-
+    const [showVolume, setShowVolume] = useState(true);
 
     // Store State & Actions (لم يتم تغيير أي شيء هنا)
     const {
@@ -356,6 +358,7 @@ export default function ChartPage() {
         { label: "1h", value: "1h" },
         { label: "2h", value: "2h" },
         { label: "3h", value: "3h" },
+        { label: "4h", value: "4h" },
         { label: "6h", value: "6h" },
         { label: "12h", value: "12h" },
         { label: "1D", value: "1d" },
@@ -481,6 +484,18 @@ export default function ChartPage() {
                         <LayoutTemplate className="w-4 h-4" />
                     </Button>
 
+
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowVolume(!showVolume)}
+                        className={`h-8 w-8 p-0 rounded hover:bg-muted ${showVolume ? "text-primary" : "text-muted-foreground"
+                            }`}
+                        title={showVolume ? "إخفاء التداول" : "إظهار التداول"}
+                    >
+                        <BarChart3 className="w-4 h-4" />
+                    </Button>
+
                     <div className="w-px h-5 bg-border mx-1" />
 
                     <Button
@@ -564,7 +579,7 @@ export default function ChartPage() {
                         containerClassName="h-full w-full"
                         showToolbar={false}
                         showDrawingTools={false} // تم إيقافه هنا لأنه الآن في الصفحة
-                        showVolume={true}
+                        showVolume={showVolume}
                         onIndicatorAdd={handleAddIndicator}
                         onIndicatorRemove={handleRemoveIndicator}
                         onIndicatorToggle={handleToggleIndicator}

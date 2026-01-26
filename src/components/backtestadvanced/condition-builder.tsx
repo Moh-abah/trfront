@@ -80,6 +80,22 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
   };
 
 
+
+
+  const toDisplayFormat = (val: string | number): string | number => {
+    if (typeof val === 'string') {
+      // إذا كانت القيمة تأتي من المخزن وتحتوي على نقطتين (id:property) ولا تبدأ بـ indicator:
+      if (val.includes(':') && !val.startsWith('indicator:')) {
+        // تحويل vc5:vc_blue_streak إلى indicator:vc5:vc_blue_streak
+        return `indicator:${val}`;
+      }
+    }
+    return val;
+  };
+
+
+
+
   const hasVolumeClimax = useMemo(() => {
     return availableIndicators.some(ind => ind.name === 'volume_climax');
   }, [availableIndicators]);
@@ -88,6 +104,28 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
   const hasSMCOrderBlock = useMemo(() => {
     return availableIndicators.some(ind => ind.name === 'smc_order_block');
   }, [availableIndicators]);
+
+
+
+  const VolumeClimaxOptions = useMemo(() => {
+    if (!hasVolumeClimax) return [];
+
+    const volumeClimaxIndicators = availableIndicators.filter(ind => ind.name === 'volume_climax');
+    const options: string[] = [];
+
+    volumeClimaxIndicators.forEach(ind => {
+      const displayId = ind.id || 'volume_climax';
+      // إضافة الخصائص المختلفة لـ volume_climax
+      options.push(
+        `${displayId}:vc_blue_streak`,
+        `${displayId}:green_candle_streak`,
+        `${displayId}:red_candle_streak`
+      );
+    });
+
+    return options;
+  }, [hasVolumeClimax, availableIndicators]);
+
 
   // إنشاء خيارات SMC الديناميكية
   const SMCOptions = useMemo(() => {
@@ -99,10 +137,10 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
     smcIndicators.forEach(ind => {
       const displayId = ind.id || 'smc_order_block';
       options.push(
-        `smc:${displayId}:bullish_zone_top`,
-        `smc:${displayId}:bullish_zone_bottom`,
-        `smc:${displayId}:bearish_zone_top`,
-        `smc:${displayId}:bearish_zone_bottom`
+        `${displayId}:bullish_zone_top`,
+        `${displayId}:bullish_zone_bottom`,
+        `${displayId}:bearish_zone_top`,
+        `${displayId}:bearish_zone_bottom`
       );
     });
 
@@ -111,33 +149,14 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
 
 
   // إنشاء VALUE_OPTIONS ديناميكياً بناءً على وجود volume_climax
+  // تعديل VALUE_OPTIONS لتحتوي فقط على الخيارات الأساسية
   const VALUE_OPTIONS = useMemo(() => {
     const baseOptions = [
       'Current Price', 'Open', 'High', 'Low', 'Close', 'Volume',
-
     ];
-    const options = [...baseOptions];
-
-
-
-    if (hasSMCOrderBlock) {
-      SMCOptions.forEach(opt => options.push(opt));
-    }
-
-    // إضافة المؤشرات المشتقة فقط إذا كان volume_climax موجوداً
-    if (hasVolumeClimax) {
-      return [
-        ...baseOptions,
-        'vc_blue_streak',
-        'green_candle_streak',
-        'red_candle_streak'
-      ];
-    }
 
     return baseOptions;
-  }, [hasVolumeClimax]);
-
-
+  }, []); // لا نحتاج إلى أي dependencies لأنها ثابتة
 
   // 2. Update Operator (Simple only)
   const updateOperator = (operator: Operator) => {
@@ -153,12 +172,34 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
         return `${parts[0]} (${parts[1]} - ${parts[2].replace('_', ' ')})`;
       }
     }
+
+    if (val.startsWith('indicator:volume_climax:')) {
+      const parts = val.replace('indicator:', '').split(':');
+      if (parts.length === 3) {
+        return `${parts[0]} (${parts[1]} - ${parts[2].replace(/_/g, ' ')})`;
+      }
+    }
     return val;
   };
 
+
   const convertSMCValue = (val: string | number): string | number => {
-    if (typeof val === 'string' && val.startsWith('smc:')) {
-      return `indicator:${val}`;
+    if (typeof val === 'string') {
+      // إذا كانت القيمة تأتي من قسم المؤشرات الخاصة (SMC أو Volume Climax)
+      if (val.startsWith('indicator:')) {
+        const withoutIndicator = val.replace('indicator:', '');
+        // إذا كان هناك نقطتين في withoutIndicator (أي id:property)
+        const parts = withoutIndicator.split(':');
+        if (parts.length === 2) {
+          // هذا يعني أن القيمة مثل indicator:vc5:vc_blue_streak
+          // نريد تخزينها كـ vc5:vc_blue_streak
+          return withoutIndicator;
+        }
+        // إذا كان هناك جزء واحد فقط، فهي مؤشر عادي مثل indicator:rsi
+        // نتركها كما هي
+      }
+      // إذا كانت القيمة تأتي من VALUE_OPTIONS مباشرة (مثل Current Price)
+      return val;
     }
     return val;
   };
@@ -446,50 +487,82 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
                   </div>
                 ) : (
                   /* If String/Indicator -> Select */
-                  <Select
-                    value={cond.left_value}
-                    onValueChange={(v) => onChange({ ...cond, left_value: v === 'number' ? 0 : v })}
-                  >
+                    <Select
+                      value={toDisplayFormat(cond.left_value)}
+                      onValueChange={(v) => onChange({ ...cond, left_value: v === 'number' ? 0 : v })}
+                    >
+
+                    
                     <SelectTrigger className="h-8 bg-[#0B0E11] border-[#2A2E39] text-[10px] text-slate-200 focus:ring-0 font-mono">
                       <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent className="bg-[#1E222D] border-[#2A2E39] text-xs">
                       {/* Standard Options */}
-                      {VALUE_OPTIONS.map(opt => (
+                      {/* {VALUE_OPTIONS.map(opt => (
                         <SelectItem key={opt} value={opt}>
                           {opt.startsWith('smc:')
                             ? `${opt.split(':')[1]}: ${opt.split(':')[2].replace('_', ' ')}`
                             : opt}
                         </SelectItem>
-                      ))}
+                      ))} */}
+                          {VALUE_OPTIONS.map(opt => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
 
                       <Separator className="my-1" />
                       <div className="px-2 py-1 text-[10px] font-bold text-slate-500 uppercase">Indicators</div>
 
                       {/* Indicators List */}
-                      {availableIndicators.map(ind => (
-                        <SelectItem key={ind.id} value={`indicator:${ind.id}`}>
-                          {ind.id}
-                        </SelectItem>
-                      ))}
+                          {availableIndicators
+                            .filter(ind => ind.name !== 'smc_order_block' && ind.name !== 'volume_climax')
+                            .map(ind => (
+                              <SelectItem key={ind.id} value={`indicator:${ind.id}`}>
+                                {ind.id}
+                              </SelectItem>
+                            ))}
 
-                      {/* SMC Specific Options Section */}
-                      {hasSMCOrderBlock && (
-                        <>
-                          <Separator className="my-1" />
-                          <div className="px-2 py-1 text-[10px] font-bold text-blue-400 uppercase">SMC Order Blocks</div>
-                          {SMCOptions.map(opt => (
-                            <SelectItem key={opt} value={`indicator:${opt}`}>
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                <span>{opt.split(':')[1]}</span>
-                                <span className="text-slate-400">{opt.split(':')[2].replace('_', ' ')}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </>
-                      )}
+                          {hasSMCOrderBlock && (
+                            <>
+                              <Separator className="my-1" />
+                              <div className="px-2 py-1 text-[10px] font-bold text-blue-400 uppercase">SMC Order Blocks</div>
+                              {SMCOptions.map(opt => {
+                                const [indicatorId, property] = opt.split(':');
+                                return (
+                                  <SelectItem key={opt} value={`indicator:${opt}`}>  {/* ⬅️ التعديل هنا */}
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                      <span>{indicatorId}</span>
+                                      <span className="text-slate-400">{property.replace('_', ' ')}</span>
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
+                            </>
+                          )}
 
+
+                          {hasVolumeClimax && (
+                            <>
+                              <Separator className="my-1" />
+                              <div className="px-2 py-1 text-[10px] font-bold text-green-400 uppercase">Volume Climax</div>
+                              {VolumeClimaxOptions.map(opt => {
+                                const [indicatorId, property] = opt.split(':');
+                                return (
+                                  <SelectItem key={opt} value={`indicator:${opt}`}>  {/* ⬅️ التعديل هنا */}
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                      <span>{indicatorId}</span>
+                                      <span className="text-slate-400">
+                                        {property.replace(/_/g, ' ')}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
+                            </>
+                          )}
                       <SelectItem value="number" className="text-slate-400 font-mono">[ Manual Number ]</SelectItem>
                     </SelectContent>
                   </Select>
@@ -497,80 +570,106 @@ export function ConditionBuilder({ condition, onChange, availableIndicators, ind
               </div>
 
               {/* Right Value */}
-              <div className="space-y-1">
-                <Label className="text-[9px] font-bold text-slate-500 uppercase">Right Side</Label>
+                {/* Right Value */}
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-bold text-slate-500 uppercase">Right Side</Label>
 
-                {typeof cond.right_value === 'number' ? (
-                  <div className="flex gap-1">
-                    <Input
-                      type="number"
-                      step={0.01}
-                      value={localRight}
-                      onChange={(e) => setLocalRight(parseFloat(e.target.value) || 0)}
-                      onBlur={() => onChange({ ...cond, right_value: localRight })}
-                      className="h-8 w-full bg-[#0B0E11] border-[#2A2E39] text-[10px] text-slate-200 font-mono focus:ring-0"
-                    />
+                  {typeof cond.right_value === 'number' ? (
+                    <div className="flex gap-1">
+                      <Input
+                        type="number"
+                        step={0.01}
+                        value={localRight}
+                        onChange={(e) => setLocalRight(parseFloat(e.target.value) || 0)}
+                        onBlur={() => onChange({ ...cond, right_value: localRight })}
+                        className="h-8 w-full bg-[#0B0E11] border-[#2A2E39] text-[10px] text-slate-200 font-mono focus:ring-0"
+                      />
 
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => onChange({ ...cond, right_value: 'Current Price' })}
-                      className="h-8 w-8 px-0 text-slate-400 hover:text-slate-200 bg-[#131722] border border-[#2A2E39]"
-                      title="Switch to Selector"
-                    >
-                      <CheckCircle2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Select
-                    value={cond.right_value}
-                    onValueChange={(v) => onChange({ ...cond, right_value: v === 'number' ? 0 : v })}
-                  >
-                    <SelectTrigger className="h-8 bg-[#0B0E11] border-[#2A2E39] text-[10px] text-slate-200 focus:ring-0 font-mono">
-                      <SelectValue placeholder="Select..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#1E222D] border-[#2A2E39] text-xs">
-                      {/* Standard Options */}
-                      {VALUE_OPTIONS.map(opt => (
-                        <SelectItem key={opt} value={opt}>
-                          {opt.startsWith('smc:')
-                            ? `${opt.split(':')[1]}: ${opt.split(':')[2].replace('_', ' ')}`
-                            : opt}
-                        </SelectItem>
-                      ))}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onChange({ ...cond, right_value: 'Current Price' })}
+                        className="h-8 w-8 px-0 text-slate-400 hover:text-slate-200 bg-[#131722] border border-[#2A2E39]"
+                        title="Switch to Selector"
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                      <Select
+                        value={toDisplayFormat(cond.right_value)}
+                        onValueChange={(v) => onChange({ ...cond, right_value: v === 'number' ? 0 : v })}
+                      >
+                      <SelectTrigger className="h-8 bg-[#0B0E11] border-[#2A2E39] text-[10px] text-slate-200 focus:ring-0 font-mono">
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1E222D] border-[#2A2E39] text-xs">
+                        {/* Standard Options - نفس التنسيق البسيط مثل Left Value */}
+                        {VALUE_OPTIONS.map(opt => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt}
+                          </SelectItem>
+                        ))}
 
-                      <Separator className="my-1" />
-                      <div className="px-2 py-1 text-[10px] font-bold text-slate-500 uppercase">Indicators</div>
+                        <Separator className="my-1" />
+                        <div className="px-2 py-1 text-[10px] font-bold text-slate-500 uppercase">Indicators</div>
 
-                      {/* Indicators List */}
-                      {availableIndicators.map(ind => (
-                        <SelectItem key={ind.id} value={`indicator:${ind.id}`}>
-                          {ind.id}
-                        </SelectItem>
-                      ))}
-
-                      {/* SMC Specific Options Section */}
-                      {hasSMCOrderBlock && (
-                        <>
-                          <Separator className="my-1" />
-                          <div className="px-2 py-1 text-[10px] font-bold text-blue-400 uppercase">SMC Order Blocks</div>
-                          {SMCOptions.map(opt => (
-                            <SelectItem key={opt} value={`indicator:${opt}`}>
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                <span>{opt.split(':')[1]}</span>
-                                <span className="text-slate-400">{opt.split(':')[2].replace('_', ' ')}</span>
-                              </div>
+                        {/* Indicators List - نفس التصفية مثل Left Value */}
+                        {availableIndicators
+                          .filter(ind => ind.name !== 'smc_order_block' && ind.name !== 'volume_climax')
+                          .map(ind => (
+                            <SelectItem key={ind.id} value={`indicator:${ind.id}`}>
+                              {ind.id}
                             </SelectItem>
                           ))}
-                        </>
-                      )}
 
-                      <SelectItem value="number" className="text-slate-400 font-mono">[ Manual Number ]</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
+                        {/* SMC Specific Options Section */}
+                        {hasSMCOrderBlock && (
+                          <>
+                            <Separator className="my-1" />
+                            <div className="px-2 py-1 text-[10px] font-bold text-blue-400 uppercase">SMC Order Blocks</div>
+                            {SMCOptions.map(opt => {
+                              const [indicatorId, property] = opt.split(':');
+                              return (
+                                <SelectItem key={opt} value={`indicator:${opt}`}>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    <span>{indicatorId}</span>
+                                    <span className="text-slate-400">{property.replace('_', ' ')}</span>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* Volume Climax Section */}
+                        {hasVolumeClimax && (
+                          <>
+                            <Separator className="my-1" />
+                            <div className="px-2 py-1 text-[10px] font-bold text-green-400 uppercase">Volume Climax</div>
+                            {VolumeClimaxOptions.map(opt => {
+                              const [indicatorId, property] = opt.split(':');
+                              return (
+                                <SelectItem key={opt} value={`indicator:${opt}`}>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span>{indicatorId}</span>
+                                    <span className="text-slate-400">
+                                      {property.replace(/_/g, ' ')}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        <SelectItem value="number" className="text-slate-400 font-mono">[ Manual Number ]</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
             </div>
 
           </div>
